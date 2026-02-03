@@ -1,6 +1,9 @@
 # Arquivos de teste
 test-jsonbin.html
 
+# Configurações antigas (JSONBin)
+jsonbin-config.js
+
 # Guias e documentação de desenvolvimento (opcional - você pode querer manter)
 # Descomente se NÃO quiser enviar os guias para o GitHub:
 # GUIA_JSONBIN.md
