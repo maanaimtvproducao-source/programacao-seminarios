@@ -2,8 +2,6 @@
 // Sistema de Notificações Push
 // ========================================
 
-let messaging = null;
-
 // Inicializar notificações
 async function initNotifications() {
     try {
@@ -13,13 +11,6 @@ async function initNotifications() {
             return false;
         }
 
-        // Verificar se o Firebase Messaging está disponível
-        if (!firebase.messaging.isSupported()) {
-            console.warn('Firebase Messaging não é suportado neste navegador');
-            return false;
-        }
-
-        messaging = firebase.messaging();
         console.log('✅ Sistema de notificações inicializado');
         
         // Verificar status das notificações
@@ -42,27 +33,14 @@ async function requestNotificationPermission() {
         
         if (permission === 'granted') {
             console.log('✅ Permissão concedida!');
+            localStorage.setItem('simpleNotificationsEnabled', 'true');
             
-            // Obter token de registro
-            const token = await messaging.getToken({
-                vapidKey: 'VAPID_KEY_AQUI' // Será configurado depois
-            });
+            // Configurar listener no Firebase para detectar novos eventos
+            setupEventListener();
             
-            if (token) {
-                console.log('🔑 Token FCM:', token);
-                
-                // Salvar token no localStorage
-                localStorage.setItem('fcmToken', token);
-                
-                // Salvar token no Firebase Database
-                await saveTokenToDatabase(token);
-                
-                // Atualizar botão
-                updateNotificationButton();
-                
-                alert('✅ Notificações ativadas! Você será avisado quando novos eventos forem adicionados.');
-                return true;
-            }
+            updateNotificationButton();
+            alert('✅ Notificações ativadas! Você será avisado quando novos eventos forem adicionados.');
+            return true;
         } else if (permission === 'denied') {
             console.warn('❌ Permissão negada pelo usuário');
             alert('❌ Você negou as notificações. Para ativar, vá nas configurações do navegador.');
@@ -74,42 +52,11 @@ async function requestNotificationPermission() {
         
     } catch (error) {
         console.error('❌ Erro ao solicitar permissão:', error);
-        
-        // Se o erro for sobre VAPID key, usar método simplificado
-        if (error.code === 'messaging/invalid-vapid-key' || error.code === 'messaging/token-subscribe-failed') {
-            console.log('⚠️ Usando método simplificado de notificações');
-            return await enableSimpleNotifications();
-        }
-        
         alert('❌ Erro ao ativar notificações. Tente novamente.');
         return false;
     }
 }
 
-// Método simplificado usando apenas Web Notifications API
-async function enableSimpleNotifications() {
-    try {
-        const permission = await Notification.requestPermission();
-        
-        if (permission === 'granted') {
-            console.log('✅ Notificações simples ativadas');
-            localStorage.setItem('simpleNotificationsEnabled', 'true');
-            
-            // Configurar listener no Firebase para detectar novos eventos
-            setupEventListener();
-            
-            updateNotificationButton();
-            alert('✅ Notificações ativadas! Você será avisado quando novos eventos forem adicionados.');
-            return true;
-        }
-        
-        return false;
-        
-    } catch (error) {
-        console.error('❌ Erro:', error);
-        return false;
-    }
-}
 
 // Configurar listener para novos eventos
 function setupEventListener() {
@@ -156,19 +103,6 @@ function showNotification(title, options) {
     }
 }
 
-// Salvar token no database
-async function saveTokenToDatabase(token) {
-    try {
-        await database.ref('fcmTokens').push({
-            token: token,
-            timestamp: firebase.database.ServerValue.TIMESTAMP,
-            userAgent: navigator.userAgent
-        });
-        console.log('✅ Token salvo no database');
-    } catch (error) {
-        console.error('❌ Erro ao salvar token:', error);
-    }
-}
 
 // Atualizar botão de notificações
 function updateNotificationButton() {
@@ -199,22 +133,6 @@ function updateNotificationButton() {
 function formatDate(dateStr) {
     const date = new Date(dateStr);
     return date.toLocaleDateString('pt-BR');
-}
-
-// Receber mensagens em foreground
-if (messaging) {
-    messaging.onMessage((payload) => {
-        console.log('📨 Mensagem recebida:', payload);
-        
-        showNotification(
-            payload.notification?.title || 'Novo Evento!',
-            {
-                body: payload.notification?.body || 'Um novo evento foi adicionado',
-                icon: '/logo.png',
-                badge: '/logo.png'
-            }
-        );
-    });
 }
 
 // Inicializar quando o DOM carregar
