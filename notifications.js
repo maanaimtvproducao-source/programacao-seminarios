@@ -1,50 +1,56 @@
 // ========================================
-// Sistema de Notificações Push
+// Sistema de Notificações Push Simplificado
 // ========================================
 
-// Inicializar notificações
-async function initNotifications() {
-    try {
-        // Verificar se o navegador suporta notificações
-        if (!('Notification' in window)) {
-            console.warn('Este navegador não suporta notificações');
-            return false;
-        }
+// Verificar se notificações estão suportadas
+function isNotificationSupported() {
+    return 'Notification' in window;
+}
 
-        console.log('✅ Sistema de notificações inicializado');
-        
-        // Verificar status das notificações
-        updateNotificationButton();
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro ao inicializar notificações:', error);
-        return false;
-    }
+// Verificar se notificações estão ativadas
+function isNotificationEnabled() {
+    return Notification.permission === 'granted' && 
+           localStorage.getItem('notificationsEnabled') === 'true';
 }
 
 // Solicitar permissão e ativar notificações
 async function requestNotificationPermission() {
     try {
+        if (!isNotificationSupported()) {
+            alert('❌ Seu navegador não suporta notificações.');
+            return false;
+        }
+
         console.log('📱 Solicitando permissão para notificações...');
         
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
             console.log('✅ Permissão concedida!');
-            localStorage.setItem('simpleNotificationsEnabled', 'true');
             
-            // Configurar listener no Firebase para detectar novos eventos
+            // Marcar como ativado
+            localStorage.setItem('notificationsEnabled', 'true');
+            localStorage.setItem('notificationsStartTime', Date.now().toString());
+            
+            // Configurar listener para novos eventos
             setupEventListener();
             
+            // Atualizar botão
             updateNotificationButton();
-            alert('✅ Notificações ativadas! Você será avisado quando novos eventos forem adicionados.');
+            
+            // Mostrar notificação de teste
+            showNotification('🔔 Notificações Ativadas!', {
+                body: 'Você receberá alertas quando novos eventos forem adicionados.',
+                icon: '/logo.png'
+            });
+            
             return true;
+            
         } else if (permission === 'denied') {
-            console.warn('❌ Permissão negada pelo usuário');
-            alert('❌ Você negou as notificações. Para ativar, vá nas configurações do navegador.');
+            console.warn('❌ Permissão negada');
+            alert('❌ Você bloqueou as notificações.\n\nPara ativar:\n1. Clique no ícone de cadeado 🔒 na barra de endereço\n2. Em "Notificações", selecione "Permitir"');
             return false;
+            
         } else {
             console.warn('⚠️ Permissão não concedida');
             return false;
@@ -57,96 +63,149 @@ async function requestNotificationPermission() {
     }
 }
 
-
-// Configurar listener para novos eventos
+// Configurar listener para detectar novos eventos no Firebase
 function setupEventListener() {
-    if (!database) return;
+    if (typeof firebase === 'undefined' || !firebase.database) {
+        console.warn('⚠️ Firebase não está disponível');
+        return;
+    }
     
-    // Salvar timestamp atual
-    const now = Date.now();
-    localStorage.setItem('notificationsStartTime', now.toString());
+    const db = firebase.database();
+    const startTime = parseInt(localStorage.getItem('notificationsStartTime') || '0');
     
     // Listener para novos eventos
-    database.ref('events').on('child_added', (snapshot) => {
-        const startTime = parseInt(localStorage.getItem('notificationsStartTime') || '0');
+    db.ref('events').on('child_added', (snapshot) => {
         const event = snapshot.val();
+        const now = Date.now();
         
-        // Verificar se o evento foi adicionado depois de ativar notificações
-        const eventTime = new Date(event.startDate).getTime();
-        
-        if (Date.now() - startTime > 5000) { // Ignorar eventos dos primeiros 5 segundos
+        // Só notificar eventos adicionados DEPOIS de ativar notificações
+        // (ignorar primeiros 10 segundos para não notificar eventos já existentes)
+        if (now - startTime > 10000) {
+            console.log('🆕 Novo evento detectado:', event.name);
+            
+            const eventDate = new Date(event.startDate);
+            const formattedDate = eventDate.toLocaleDateString('pt-BR');
+            
             showNotification('🎉 Novo Evento Adicionado!', {
-                body: `${event.name} - ${event.class}\n📅 ${formatDate(event.startDate)} às ${event.startTime}`,
+                body: `${event.name}\n📅 ${formattedDate} às ${event.startTime}\n📍 ${event.area || 'Local não informado'}`,
                 icon: '/logo.png',
                 badge: '/logo.png',
-                tag: 'novo-evento-' + snapshot.key,
+                tag: 'evento-' + snapshot.key,
                 requireInteraction: false
             });
         }
     });
     
-    console.log('👂 Ouvindo novos eventos...');
+    console.log('👂 Ouvindo novos eventos no Firebase...');
 }
 
 // Mostrar notificação
 function showNotification(title, options) {
-    if (Notification.permission === 'granted') {
-        const notification = new Notification(title, options);
+    if (!isNotificationSupported()) {
+        console.warn('Notificações não suportadas');
+        return;
+    }
+    
+    if (Notification.permission !== 'granted') {
+        console.warn('Permissão de notificação não concedida');
+        return;
+    }
+    
+    try {
+        const notification = new Notification(title, {
+            icon: '/logo.png',
+            badge: '/logo.png',
+            ...options
+        });
         
+        // Ao clicar na notificação, focar na janela
         notification.onclick = () => {
             window.focus();
             notification.close();
         };
         
         // Auto-fechar após 10 segundos
-        setTimeout(() => notification.close(), 10000);
+        setTimeout(() => {
+            notification.close();
+        }, 10000);
+        
+        console.log('✅ Notificação exibida:', title);
+        
+    } catch (error) {
+        console.error('❌ Erro ao mostrar notificação:', error);
     }
 }
-
 
 // Atualizar botão de notificações
 function updateNotificationButton() {
     const alertBtn = document.querySelector('.alert-btn');
     if (!alertBtn) return;
     
-    const isEnabled = Notification.permission === 'granted' || 
-                      localStorage.getItem('simpleNotificationsEnabled') === 'true';
-    
-    if (isEnabled) {
-        alertBtn.textContent = '🔔 Alertas ativados';
-        alertBtn.classList.add('active');
+    if (isNotificationEnabled()) {
+        // Notificações ativadas
+        alertBtn.textContent = '✅ Alertas ativados';
         alertBtn.style.backgroundColor = '#4CAF50';
+        alertBtn.style.color = 'white';
         alertBtn.style.cursor = 'default';
+        alertBtn.disabled = false;
+        
         alertBtn.onclick = () => {
-            alert('✅ Notificações já estão ativadas! Você receberá alertas de novos eventos.');
+            alert('✅ Notificações já estão ativadas!\n\nVocê receberá alertas sempre que um novo evento for adicionado.\n\nPara desativar, bloqueie as notificações nas configurações do navegador.');
         };
-    } else {
-        alertBtn.textContent = '🔔 Ativar alertas';
-        alertBtn.classList.remove('active');
-        alertBtn.style.backgroundColor = '';
+        
+    } else if (Notification.permission === 'denied') {
+        // Permissão negada
+        alertBtn.textContent = '🔒 Notificações bloqueadas';
+        alertBtn.style.backgroundColor = '#f44336';
+        alertBtn.style.color = 'white';
         alertBtn.style.cursor = 'pointer';
+        alertBtn.disabled = false;
+        
+        alertBtn.onclick = () => {
+            alert('❌ As notificações estão bloqueadas.\n\nPara ativar:\n1. Clique no ícone de cadeado 🔒 na barra de endereço\n2. Em "Notificações", selecione "Permitir"\n3. Recarregue a página');
+        };
+        
+    } else {
+        // Não ativado ainda
+        alertBtn.textContent = '🔔 Ativar alertas';
+        alertBtn.style.backgroundColor = '';
+        alertBtn.style.color = '';
+        alertBtn.style.cursor = 'pointer';
+        alertBtn.disabled = false;
+        
         alertBtn.onclick = requestNotificationPermission;
     }
 }
 
-// Formatar data
-function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('pt-BR');
+// Desativar notificações
+function disableNotifications() {
+    localStorage.removeItem('notificationsEnabled');
+    localStorage.removeItem('notificationsStartTime');
+    
+    // Remover listeners
+    if (typeof firebase !== 'undefined' && firebase.database) {
+        firebase.database().ref('events').off('child_added');
+    }
+    
+    updateNotificationButton();
+    console.log('🔕 Notificações desativadas');
 }
 
 // Inicializar quando o DOM carregar
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🔔 Sistema de notificações carregado');
+    
     // Aguardar Firebase carregar
     setTimeout(() => {
-        initNotifications();
+        // Atualizar botão
+        updateNotificationButton();
         
-        // Configurar botão
-        const alertBtn = document.querySelector('.alert-btn');
-        if (alertBtn) {
-            alertBtn.onclick = requestNotificationPermission;
+        // Se já estiver ativado, configurar listener
+        if (isNotificationEnabled()) {
+            console.log('✅ Notificações já estavam ativadas, reativando listener...');
+            setupEventListener();
         }
-    }, 1000);
+    }, 1500);
 });
 
-console.log('📱 Sistema de notificações carregado');
+console.log('📱 notifications.js carregado');
