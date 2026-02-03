@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Programação de Seminários</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-body">
+    <div class="admin-container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-screen">
+            <div class="login-box">
+                <div class="login-header">
+                    <h1>🏛️ Administração</h1>
+                    <p>Programação de Seminários</p>
+                </div>
+
+                <!-- Formulário de Login -->
+                <div id="loginFormContainer">
+                    <h2>Login Administrativo</h2>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="username">Email/Usuário:</label>
+                            <input type="text" id="username" required autofocus>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Senha:</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        <button type="submit" class="btn-primary btn-block">Entrar</button>
+                    </form>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <p style="color: var(--gray-600);">Não tem uma conta?</p>
+                        <button id="showRegisterForm" class="btn-link">Solicitar Cadastro</button>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="index.html" class="btn-link">← Voltar para página inicial</a>
+                    </div>
+                </div>
+
+                <!-- Formulário de Cadastro -->
+                <div id="registerFormContainer" style="display: none;">
+                    <h2>Solicitar Cadastro</h2>
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="registerEmail">Email:</label>
+                            <input type="email" id="registerEmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">Senha:</label>
+                            <input type="password" id="registerPassword" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="registerMaanaim">Maanaim:</label>
+                            <select id="registerMaanaim" required>
+                                <option value="">Selecione um Maanaim</option>
+                            </select>
+                        </div>
+                        <div class="info-box">
+                            <p>ℹ️ Seu cadastro precisará ser aprovado por um administrador geral antes de ter acesso ao sistema.</p>
+                        </div>
+                        <button type="submit" class="btn-primary btn-block">Solicitar Cadastro</button>
+                    </form>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <p style="color: var(--gray-600);">Já tem uma conta?</p>
+                        <button id="showLoginForm" class="btn-link">Fazer Login</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel" style="display: none;">
+            <div class="admin-panel-header">
+                <div class="admin-panel-title">
+                    <h1>Painel Administrativo</h1>
+                    <span id="userRole" class="user-role"></span>
+                </div>
+                <div class="admin-panel-actions">
+                    <a href="index.html" target="_blank" class="btn-secondary">Ver Página Pública</a>
+                    <button id="logoutBtn" class="btn-danger">Sair</button>
+                </div>
+            </div>
+
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="eventos">📅 Gerenciar Eventos</button>
+                <button class="admin-tab" data-tab="maanaims" id="maanaimsTab">🏛️ Gerenciar Maanaims</button>
+                <button class="admin-tab" data-tab="usuarios" id="usuariosTab">👥 Gerenciar Usuários</button>
+                <button class="admin-tab" data-tab="aprovacoes" id="aprovacoesTab">
+                    ✅ Aprovar Cadastros
+                    <span id="pendingBadge" class="badge" style="display: none;">0</span>
+                </button>
+            </div>
+
+            <div class="admin-content">
+                <!-- Seção de Eventos -->
+                <div id="eventosSection" class="admin-section active">
+                    <h2>Adicionar/Editar Evento</h2>
+                    <form id="eventForm" class="admin-form">
+                        <input type="hidden" id="eventId">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventName">Nome do Evento:</label>
+                                <input type="text" id="eventName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventClass">Classe:</label>
+                                <select id="eventClass" required>
+                                    <option value="1periodo">1º Período</option>
+                                    <option value="2periodo">2º Período</option>
+                                    <option value="3periodo">3º Período</option>
+                                    <option value="4periodo">4º Período</option>
+                                    <option value="5periodo">5º Período</option>
+                                    <option value="6periodo">6º Período</option>
+                                    <option value="principiantes">Principiantes</option>
+                                    <option value="unidos">Unidos em Família</option>
+                                    <option value="geral">Geral</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventStartDate">Data Início:</label>
+                                <input type="date" id="eventStartDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventEndDate">Data Fim:</label>
+                                <input type="date" id="eventEndDate" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventStartTime">Horário Início:</label>
+                                <input type="time" id="eventStartTime" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventEndTime">Horário Fim:</label>
+                                <input type="time" id="eventEndTime" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventMaanaim">Maanaim:</label>
+                                <select id="eventMaanaim" required>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventArea">Área:</label>
+                                <input type="text" id="eventArea" placeholder="ex: TEMPLO, TRIPLEX" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventPrice">Valor (R$):</label>
+                                <input type="number" id="eventPrice" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventDeadline">Inscrições até:</label>
+                                <input type="date" id="eventDeadline" required>
+                            </div>
+                        </div>
+                        <div class="form-buttons">
+                            <button type="submit" class="btn-primary">Salvar Evento</button>
+                            <button type="button" id="cancelEventBtn" class="btn-secondary">Cancelar</button>
+                        </div>
+                    </form>
+
+                    <h2>Eventos Cadastrados</h2>
+                    <div id="adminEventsList" class="admin-list"></div>
+                </div>
+
+                <!-- Seção de Maanaims -->
+                <div id="maanaimsSection" class="admin-section">
+                    <h2>Gerenciar Maanaims</h2>
+                    <p class="section-description">Adicione, edite ou remova os Maanaims disponíveis no sistema.</p>
+                    
+                    <form id="maanaimForm" class="admin-form">
+                        <input type="hidden" id="maanaimId">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="maanaimName">Nome do Maanaim:</label>
+                                <input type="text" id="maanaimName" placeholder="Ex: Domingos Martins" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="maanaimSlug">Identificador (slug):</label>
+                                <input type="text" id="maanaimSlug" placeholder="Ex: domingos-martins" required pattern="[a-z0-9-]+" title="Apenas letras minúsculas, números e hífen">
+                                <small>Apenas letras minúsculas, números e hífen (sem espaços)</small>
+                            </div>
+                        </div>
+                        <div class="form-buttons">
+                            <button type="submit" class="btn-primary">Salvar Maanaim</button>
+                            <button type="button" id="cancelMaanaimBtn" class="btn-secondary">Cancelar</button>
+                        </div>
+                    </form>
+
+                    <h2>Maanaims Cadastrados</h2>
+                    <div id="maanaimsList" class="admin-list"></div>
+                </div>
+
+                <!-- Seção de Usuários -->
+                <div id="usuariosSection" class="admin-section">
+                    <h2>Gerenciar Usuários</h2>
+                    <p class="section-description">Adicione novos usuários manualmente (apenas Administradores Gerais).</p>
+                    
+                    <form id="userForm" class="admin-form">
+                        <div class="form-group">
+                            <label for="newUsername">Email/Usuário:</label>
+                            <input type="text" id="newUsername" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">Senha:</label>
+                            <input type="password" id="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="userRoleSelect">Tipo:</label>
+                            <select id="userRoleSelect" required>
+                                <option value="admin">Administrador Geral</option>
+                                <option value="maanaim-admin">Administrador de Maanaim</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="maanaimSelectGroup">
+                            <label for="userMaanaim">Maanaim:</label>
+                            <select id="userMaanaim">
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">Adicionar Usuário</button>
+                    </form>
+                    
+                    <h2>Usuários Cadastrados</h2>
+                    <div id="usersList" class="admin-list"></div>
+                </div>
+
+                <!-- Seção de Aprovações -->
+                <div id="aprovacoesSection" class="admin-section">
+                    <h2>Solicitações de Cadastro Pendentes</h2>
+                    <p class="section-description">Aprove ou rejeite as solicitações de cadastro de novos usuários.</p>
+                    <div id="pendingUsersList" class="admin-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSONBin Config -->
+    <script src="jsonbin-config.js"></script>
+    
+    <!-- Script Admin -->
+    <script src="admin.js"></script>
+</body>
+</html>

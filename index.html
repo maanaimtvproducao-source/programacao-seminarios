@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programação de Seminários</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="logo.png" alt="Igreja Cristã Maranata" onerror="this.style.display='none'">
+            </div>
+            <div class="header-text">
+                <h1>Programação de Seminários</h1>
+                <p>Confira os eventos disponíveis e compartilhe com o responsável pelas inscrições da sua igreja.</p>
+            </div>
+            <button class="alert-btn">🔔 Ativar alertas</button>
+        </div>
+    </header>
+
+    <!-- Seleção de Maanaim -->
+    <section class="maanaim-section">
+        <div class="container">
+            <div class="section-title">
+                <span class="icon">🏛️</span>
+                <div>
+                    <h2>Escolha o Maanaim</h2>
+                    <p>Selecione o local dos eventos</p>
+                </div>
+            </div>
+            <div class="maanaim-grid" id="maanaimGrid">
+                <!-- Maanaims serão carregados dinamicamente via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Calendário e Eventos -->
+    <section class="main-section">
+        <div class="container">
+            <div class="calendar-and-events">
+                <!-- Calendário -->
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button id="prevMonth">←</button>
+                        <div class="calendar-title">
+                            <h3 id="monthName">Janeiro</h3>
+                            <span id="yearName">2026</span>
+                        </div>
+                        <button id="todayBtn">🏠</button>
+                        <button id="nextMonth">→</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
+
+                <!-- Área de eventos -->
+                <div class="events-placeholder" id="eventsPlaceholder">
+                    <span class="calendar-icon">📅</span>
+                    <p>Selecione uma data para ver os eventos</p>
+                </div>
+            </div>
+
+            <!-- Filtro por classe -->
+            <div class="filter-section">
+                <div class="filter-header">
+                    <span class="filter-icon">🔽</span>
+                    <h3>Filtrar por classe</h3>
+                </div>
+                <div class="filter-buttons" id="filterButtons">
+                    <button class="filter-btn active" data-filter="todos">Todos</button>
+                    <button class="filter-btn" data-filter="favoritos">❤️ Favoritos</button>
+                    <button class="filter-btn" data-filter="1periodo">1º Período</button>
+                    <button class="filter-btn" data-filter="2periodo">2º Período</button>
+                    <button class="filter-btn" data-filter="3periodo">3º Período</button>
+                    <button class="filter-btn" data-filter="4periodo">4º Período</button>
+                    <button class="filter-btn" data-filter="5periodo">5º Período</button>
+                    <button class="filter-btn" data-filter="6periodo">6º Período</button>
+                    <button class="filter-btn" data-filter="principiantes">Principiantes</button>
+                    <button class="filter-btn" data-filter="unidos">Unidos em Família</button>
+                    <button class="filter-btn" data-filter="geral">Geral</button>
+                </div>
+            </div>
+
+            <!-- Grid de eventos -->
+            <div class="events-grid" id="eventsGrid"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Igreja Cristã Maranata © 2026</p>
+    </footer>
+
+    <!-- Modal de Detalhes do Evento -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content event-modal">
+            <button class="close-round">&times;</button>
+            <div class="event-modal-header" id="eventModalHeader"></div>
+            <div class="event-modal-body" id="eventModalBody"></div>
+            <div class="event-modal-actions">
+                <button id="shareWhatsApp" class="btn-whatsapp">
+                    <span>📱</span> WhatsApp
+                </button>
+                <button id="copyText" class="btn-copy">Copiar Texto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JSONBin Config -->
+    <script src="jsonbin-config.js"></script>
+    
+    <!-- Script Principal -->
+    <script src="script.js"></script>
+</body>
+</html>

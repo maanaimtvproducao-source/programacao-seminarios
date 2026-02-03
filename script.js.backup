@@ -1,0 +1,1162 @@
+// Sistema de Programação de Seminários - Página Pública
+// Gerenciamento de Estado
+const state = {
+    events: [],
+    maanaims: [],
+    favorites: [],
+    currentMonth: new Date().getMonth(),
+    currentYear: new Date().getFullYear(),
+    selectedDate: null,
+    selectedMaanaim: 'todos',
+    selectedFilter: 'todos'
+};
+
+// Dados iniciais (serão gerenciados pela página admin.html)
+const initialEvents = [
+    {
+        id: '1',
+        name: 'UNIDOS EM FAMÍLIA',
+        class: 'unidos',
+        startDate: '2026-01-30',
+        endDate: '2026-01-30',
+        startTime: '10:00',
+        endTime: '12:00',
+        maanaim: 'domingos-martins',
+        area: 'TEMPLO',
+        price: 280.00,
+        deadline: '2026-01-30'
+    },
+    {
+        id: '2',
+        name: 'PRINCIPIANTES',
+        class: 'principiantes',
+        startDate: '2026-01-14',
+        endDate: '2026-01-14',
+        startTime: '09:00',
+        endTime: '18:00',
+        maanaim: 'terra-vermelha',
+        area: 'TRIPLEX',
+        price: 150.00,
+        deadline: '2026-01-17'
+    },
+    {
+        id: '3',
+        name: 'JOVENS',
+        class: 'geral',
+        startDate: '2026-01-14',
+        endDate: '2026-01-14',
+        startTime: '10:00',
+        endTime: '18:00',
+        maanaim: 'domingos-martins',
+        area: 'TEMPLO',
+        price: 150.00,
+        deadline: '2026-01-14'
+    },
+    {
+        id: '4',
+        name: '1º PERÍODO',
+        class: '1periodo',
+        startDate: '2026-02-16',
+        endDate: '2026-02-17',
+        startTime: '10:00',
+        endTime: '12:00',
+        maanaim: 'domingos-martins',
+        area: 'TEMPLO',
+        price: 150.00,
+        deadline: '2026-01-17'
+    },
+    {
+        id: '5',
+        name: '1º PERÍODO',
+        class: '1periodo',
+        startDate: '2026-04-18',
+        endDate: '2026-04-18',
+        startTime: '09:00',
+        endTime: '18:00',
+        maanaim: 'terra-vermelha',
+        area: 'TRIPLEX',
+        price: 150.00,
+        deadline: '2026-04-18'
+    },
+    {
+        id: '6',
+        name: '2º PERÍODO',
+        class: '2periodo',
+        startDate: '2026-03-07',
+        endDate: '2026-03-07',
+        startTime: '10:00',
+        endTime: '18:00',
+        maanaim: 'domingos-martins',
+        area: 'TEMPLO',
+        price: 150.00,
+        deadline: '2026-03-07'
+    },
+    {
+        id: '7',
+        name: '2º PERÍODO',
+        class: '2periodo',
+        startDate: '2026-05-09',
+        endDate: '2026-05-09',
+        startTime: '09:00',
+        endTime: '18:00',
+        maanaim: 'cariacica',
+        area: 'TEMPLO',
+        price: 150.00,
+        deadline: '2026-05-09'
+    },
+    {
+        id: '8',
+        name: '3º PERÍODO',
+        class: '3periodo',
+        startDate: '2026-03-21',
+        endDate: '2026-03-21',
+        startTime: '10:00',
+        endTime: '18:00',
+        maanaim: 'carapina',
+        area: 'TEMPLO',
+        price: 150.00,
+        deadline: '2026-03-21'
+    },
+    {
+        id: '9',
+        name: 'PASTORES, UNGIDOS, DIÁCONOS E OBREIROS',
+        class: 'geral',
+        startDate: '2026-03-07',
+        endDate: '2026-03-07',
+        startTime: '10:00',
+        endTime: '18:00',
+        maanaim: 'terra-vermelha',
+        area: 'TRIPLEX',
+        price: 150.00,
+        deadline: '2026-03-07'
+    },
+    {
+        id: '10',
+        name: 'GRUPO DE INTERCESSÃO E SENHORAS',
+        class: 'geral',
+        startDate: '2026-03-21',
+        endDate: '2026-03-21',
+        startTime: '10:00',
+        endTime: '18:00',
+        maanaim: 'domingos-martins',
+        area: 'TRIPLEX',
+        price: 150.00,
+        deadline: '2026-03-21'
+    }
+];
+
+// Inicialização
+function init() {
+    loadFromLocalStorage();
+    setupEventListeners();
+    renderCalendar();
+    renderEvents();
+    loadFavorites();
+}
+
+// LocalStorage
+function loadFromLocalStorage() {
+    const savedEvents = localStorage.getItem('seminarioEvents');
+    const savedMaanaims = localStorage.getItem('seminarioMaanaims');
+    const savedFavorites = localStorage.getItem('seminarioFavorites');
+
+    state.events = savedEvents ? JSON.parse(savedEvents) : initialEvents;
+    state.maanaims = savedMaanaims ? JSON.parse(savedMaanaims) : [];
+    state.favorites = savedFavorites ? JSON.parse(savedFavorites) : [];
+
+    // Se não há Maanaims salvos, usar os eventos existentes para popular a lista
+    if (state.maanaims.length === 0 && state.events.length > 0) {
+        const uniqueMaanaims = [...new Set(state.events.map(e => e.maanaim))];
+        state.maanaims = uniqueMaanaims.map((slug, index) => ({
+            id: String(index + 1),
+            slug: slug,
+            name: getMaanaimNameFromSlug(slug)
+        }));
+    }
+
+    saveToLocalStorage();
+}
+
+function saveToLocalStorage() {
+    localStorage.setItem('seminarioFavorites', JSON.stringify(state.favorites));
+}
+
+function getMaanaimNameFromSlug(slug) {
+    const defaultNames = {
+        'domingos-martins': 'Domingos Martins',
+        'terra-vermelha': 'Terra Vermelha',
+        'cariacica': 'Cariacica',
+        'carapina': 'Carapina'
+    };
+    return defaultNames[slug] || slug;
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // Carregar Maanaims dinamicamente
+    renderMaanaimGrid();
+
+    // Maanaim selection
+    document.querySelectorAll('.maanaim-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.maanaim-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            state.selectedMaanaim = card.dataset.maanaim;
+            renderEvents();
+        });
+    });
+
+    // Calendar navigation
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        state.currentMonth--;
+        if (state.currentMonth < 0) {
+            state.currentMonth = 11;
+            state.currentYear--;
+        }
+        renderCalendar();
+    });
+
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        state.currentMonth++;
+        if (state.currentMonth > 11) {
+            state.currentMonth = 0;
+            state.currentYear++;
+        }
+        renderCalendar();
+    });
+
+    document.getElementById('todayBtn').addEventListener('click', () => {
+        const today = new Date();
+        state.currentMonth = today.getMonth();
+        state.currentYear = today.getFullYear();
+        renderCalendar();
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.selectedFilter = btn.dataset.filter;
+            renderEvents();
+        });
+    });
+
+    // Modals
+    document.querySelectorAll('.close, .close-round').forEach(btn => {
+        btn.addEventListener('click', closeModals);
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            closeModals();
+        }
+    });
+}
+
+// Renderizar Maanaims dinamicamente
+function renderMaanaimGrid() {
+    const grid = document.getElementById('maanaimGrid');
+    if (!grid) return;
+
+    // Manter botão "Todos os Maanaim"
+    const todosBtn = grid.querySelector('[data-maanaim="todos"]');
+    
+    // Limpar grid
+    grid.innerHTML = '';
+    
+    // Adicionar botão "Todos"
+    if (todosBtn) {
+        grid.appendChild(todosBtn);
+    } else {
+        const allBtn = document.createElement('button');
+        allBtn.className = 'maanaim-card active';
+        allBtn.dataset.maanaim = 'todos';
+        allBtn.innerHTML = `
+            <span class="icon">🎯</span>
+            <span>Todos os Maanaim</span>
+        `;
+        grid.appendChild(allBtn);
+    }
+
+    // Adicionar Maanaims do sistema
+    state.maanaims.forEach(maanaim => {
+        const card = document.createElement('button');
+        card.className = 'maanaim-card';
+        card.dataset.maanaim = maanaim.slug;
+        card.innerHTML = `
+            <span class="icon">🏛️</span>
+            <span>${maanaim.name}</span>
+        `;
+        grid.appendChild(card);
+    });
+
+    // Adicionar event listeners
+    grid.querySelectorAll('.maanaim-card').forEach(card => {
+        card.addEventListener('click', () => {
+            grid.querySelectorAll('.maanaim-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            state.selectedMaanaim = card.dataset.maanaim;
+            renderEvents();
+        });
+    });
+}
+
+// Calendário
+function renderCalendar() {
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const daysOfWeek = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+    document.getElementById('monthName').textContent = months[state.currentMonth];
+    document.getElementById('yearName').textContent = state.currentYear;
+
+    const firstDay = new Date(state.currentYear, state.currentMonth, 1);
+    const lastDay = new Date(state.currentYear, state.currentMonth + 1, 0);
+    const prevLastDay = new Date(state.currentYear, state.currentMonth, 0);
+    
+    const firstDayIndex = firstDay.getDay();
+    const lastDayDate = lastDay.getDate();
+    const prevLastDayDate = prevLastDay.getDate();
+
+    let calendarHTML = '';
+
+    // Headers
+    daysOfWeek.forEach(day => {
+        calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+    });
+
+    // Previous month days
+    for (let x = firstDayIndex; x > 0; x--) {
+        calendarHTML += `<div class="calendar-day other-month">${prevLastDayDate - x + 1}</div>`;
+    }
+
+    // Current month days
+    const today = new Date();
+    for (let day = 1; day <= lastDayDate; day++) {
+        const dateStr = `${state.currentYear}-${String(state.currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasEvent = state.events.some(event => 
+            event.startDate <= dateStr && dateStr <= event.endDate
+        );
+        
+        let classes = 'calendar-day';
+        if (today.getDate() === day && 
+            today.getMonth() === state.currentMonth && 
+            today.getFullYear() === state.currentYear) {
+            classes += ' today';
+        }
+        if (state.selectedDate === dateStr) {
+            classes += ' selected';
+        }
+        if (hasEvent) {
+            classes += ' has-event';
+        }
+
+        calendarHTML += `<div class="${classes}" data-date="${dateStr}">${day}</div>`;
+    }
+
+    // Next month days
+    const totalCells = firstDayIndex + lastDayDate;
+    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let day = 1; day <= remainingCells; day++) {
+        calendarHTML += `<div class="calendar-day other-month">${day}</div>`;
+    }
+
+    document.getElementById('calendarGrid').innerHTML = calendarHTML;
+
+    // Add click events to days
+    document.querySelectorAll('.calendar-day:not(.other-month)').forEach(day => {
+        day.addEventListener('click', () => {
+            state.selectedDate = day.dataset.date;
+            renderCalendar();
+            showEventsForDate(day.dataset.date);
+        });
+    });
+}
+
+function showEventsForDate(date) {
+    const placeholder = document.getElementById('eventsPlaceholder');
+    const eventsOnDate = state.events.filter(event => 
+        event.startDate <= date && date <= event.endDate
+    );
+
+    if (eventsOnDate.length > 0) {
+        placeholder.innerHTML = '<div class="events-grid" style="padding: 20px;"></div>';
+        const grid = placeholder.querySelector('.events-grid');
+        eventsOnDate.forEach(event => {
+            grid.appendChild(createEventCard(event));
+        });
+    } else {
+        placeholder.innerHTML = `
+            <span class="calendar-icon">📅</span>
+            <p>Nenhum evento nesta data</p>
+        `;
+    }
+}
+
+// Eventos
+function renderEvents() {
+    const grid = document.getElementById('eventsGrid');
+    let filteredEvents = state.events;
+
+    // Filter by Maanaim
+    if (state.selectedMaanaim !== 'todos') {
+        filteredEvents = filteredEvents.filter(e => e.maanaim === state.selectedMaanaim);
+    }
+
+    // Filter by class
+    if (state.selectedFilter !== 'todos' && state.selectedFilter !== 'favoritos') {
+        filteredEvents = filteredEvents.filter(e => e.class === state.selectedFilter);
+    }
+
+    if (state.selectedFilter === 'favoritos') {
+        filteredEvents = filteredEvents.filter(e => state.favorites.includes(e.id));
+    }
+
+    grid.innerHTML = '';
+    filteredEvents.forEach(event => {
+        grid.appendChild(createEventCard(event));
+    });
+}
+
+function createEventCard(event) {
+    const card = document.createElement('div');
+    card.className = 'event-card';
+
+    const classColors = {
+        'unidos': 'bg-purple',
+        'principiantes': 'bg-orange',
+        'geral': 'bg-blue',
+        '1periodo': 'bg-blue',
+        '2periodo': 'bg-green',
+        '3periodo': 'bg-purple',
+        '4periodo': 'bg-blue',
+        '5periodo': 'bg-teal',
+        '6periodo': 'bg-green'
+    };
+
+    const classNames = {
+        'unidos': 'UNIDOS EM FAMÍLIA',
+        'principiantes': 'PRINCIPIANTES',
+        'geral': 'GERAL',
+        '1periodo': '1º PERÍODO',
+        '2periodo': '2º PERÍODO',
+        '3periodo': '3º PERÍODO',
+        '4periodo': '4º PERÍODO',
+        '5periodo': '5º PERÍODO',
+        '6periodo': '6º PERÍODO'
+    };
+
+    const maanaimNames = {
+        'domingos-martins': 'Maanaim Domingos Martins-ES',
+        'terra-vermelha': 'Maanaim Terra Vermelha-ES',
+        'cariacica': 'Maanaim Cariacica-ES',
+        'carapina': 'Maanaim Carapina-ES'
+    };
+
+    const startDate = new Date(event.startDate + 'T00:00:00');
+    const endDate = new Date(event.endDate + 'T00:00:00');
+    const isFavorite = state.favorites.includes(event.id);
+
+    card.innerHTML = `
+        <div class="event-card-header ${classColors[event.class] || 'bg-blue'}">
+            <span>${classNames[event.class] || event.class.toUpperCase()}</span>
+            <span>🔔</span>
+        </div>
+        <div class="event-card-body">
+            <h3 class="event-card-title">${event.name}</h3>
+            <div class="event-info">
+                <div class="event-info-item">
+                    <span class="icon">📅</span>
+                    <span>${formatDate(startDate)} ${startDate.getTime() !== endDate.getTime() ? '- ' + formatDate(endDate) : ''}</span>
+                </div>
+                <div class="event-info-item">
+                    <span class="icon">🏛️</span>
+                    <span>${event.area}</span>
+                </div>
+            </div>
+            <div class="event-price">R$ ${event.price.toFixed(2).replace('.', ',')}</div>
+            <div class="event-price-label">A partir de</div>
+            <div class="event-actions">
+                <button class="btn-icon favorite ${isFavorite ? 'active' : ''}" data-event-id="${event.id}">
+                    ${isFavorite ? '❤️' : '🤍'}
+                </button>
+                <button class="btn-icon share" data-event-id="${event.id}">📤</button>
+                <button class="btn-arrow" data-event-id="${event.id}">→</button>
+            </div>
+        </div>
+    `;
+
+    // Event listeners
+    card.querySelector('.btn-arrow').addEventListener('click', () => openEventModal(event));
+    card.querySelector('.favorite').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleFavorite(event.id);
+    });
+    card.querySelector('.share').addEventListener('click', (e) => {
+        e.stopPropagation();
+        shareEvent(event);
+    });
+
+    return card;
+}
+
+function formatDate(date) {
+    const day = date.getDate();
+    const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 
+                   'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    return `${day.toString().padStart(2, '0')} ${months[date.getMonth()]}`;
+}
+
+// Modal de Evento
+function openEventModal(event) {
+    const modal = document.getElementById('eventModal');
+    const header = document.getElementById('eventModalHeader');
+    const body = document.getElementById('eventModalBody');
+
+    const classColors = {
+        'unidos': 'bg-purple',
+        'principiantes': 'bg-orange',
+        'geral': 'bg-blue',
+        '1periodo': 'bg-blue',
+        '2periodo': 'bg-green',
+        '3periodo': 'bg-purple',
+        '4periodo': 'bg-blue',
+        '5periodo': 'bg-teal',
+        '6periodo': 'bg-green'
+    };
+
+    const classNames = {
+        'unidos': 'UNIDOS EM FAMÍLIA',
+        'principiantes': 'PRINCIPIANTES',
+        'geral': 'GERAL',
+        '1periodo': '1º PERÍODO',
+        '2periodo': '2º PERÍODO',
+        '3periodo': '3º PERÍODO',
+        '4periodo': '4º PERÍODO',
+        '5periodo': '5º PERÍODO',
+        '6periodo': '6º PERÍODO'
+    };
+
+    const maanaimNames = {
+        'domingos-martins': 'Maanaim Domingos Martins-ES',
+        'terra-vermelha': 'Maanaim Terra Vermelha-ES',
+        'cariacica': 'Maanaim Cariacica-ES',
+        'carapina': 'Maanaim Carapina-ES'
+    };
+
+    const startDate = new Date(event.startDate + 'T00:00:00');
+    const endDate = new Date(event.endDate + 'T00:00:00');
+    const deadline = new Date(event.deadline + 'T00:00:00');
+
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    header.className = `event-modal-header ${classColors[event.class] || 'bg-blue'}`;
+    header.innerHTML = `
+        <div style="text-align: center; margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+            ${classNames[event.class] || event.class.toUpperCase()}
+        </div>
+        <div class="event-modal-title">${event.name}</div>
+        <div class="event-dates">
+            <div class="event-date">
+                <div class="event-date-label">INÍCIO</div>
+                <div class="event-date-day">${startDate.getDate()}</div>
+                <div class="event-date-month">${months[startDate.getMonth()]}</div>
+                <div class="event-date-time">${event.startTime}</div>
+            </div>
+            <div class="event-date">
+                <div class="event-date-label">FIM</div>
+                <div class="event-date-day">${endDate.getDate()}</div>
+                <div class="event-date-month">${months[endDate.getMonth()]}</div>
+                <div class="event-date-time">${event.endTime}</div>
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = `
+        <div class="event-detail-item">
+            <div class="event-detail-icon">🏛️</div>
+            <div class="event-detail-content">
+                <div class="event-detail-label">Área</div>
+                <div class="event-detail-value">${event.area}</div>
+            </div>
+        </div>
+        <div class="event-detail-item">
+            <div class="event-detail-icon">📍</div>
+            <div class="event-detail-content">
+                <div class="event-detail-label">Local</div>
+                <div class="event-detail-value">${maanaimNames[event.maanaim]}</div>
+            </div>
+        </div>
+        <div class="event-detail-item">
+            <div class="event-detail-icon">💰</div>
+            <div class="event-detail-content">
+                <div class="event-detail-label">Valores</div>
+                <div class="event-detail-value">R$ ${event.price.toFixed(2).replace('.', ',')} adulto 0</div>
+            </div>
+        </div>
+        <div class="event-deadline">
+            <div class="event-deadline-label">
+                <span>⏰</span>
+                <span>Inscrições até</span>
+            </div>
+            <div class="event-deadline-date">${deadline.getDate()} de ${months[deadline.getMonth()].toLowerCase()}</div>
+        </div>
+        <div class="event-share-label">Compartilhe com o responsável de inscrições:</div>
+    `;
+
+    modal.classList.add('show');
+
+    // Set up share buttons
+    document.getElementById('shareWhatsApp').onclick = () => shareEventWhatsApp(event);
+    document.getElementById('copyText').onclick = () => copyEventText(event);
+}
+
+function shareEvent(event) {
+    shareEventWhatsApp(event);
+}
+
+function shareEventWhatsApp(event) {
+    const text = generateEventText(event);
+    const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+}
+
+function copyEventText(event) {
+    const text = generateEventText(event);
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Texto copiado para a área de transferência!');
+    });
+}
+
+function generateEventText(event) {
+    const classNames = {
+        'unidos': 'UNIDOS EM FAMÍLIA',
+        'principiantes': 'PRINCIPIANTES',
+        'geral': 'GERAL',
+        '1periodo': '1º PERÍODO',
+        '2periodo': '2º PERÍODO',
+        '3periodo': '3º PERÍODO',
+        '4periodo': '4º PERÍODO',
+        '5periodo': '5º PERÍODO',
+        '6periodo': '6º PERÍODO'
+    };
+
+    const maanaimNames = {
+        'domingos-martins': 'Maanaim Domingos Martins-ES',
+        'terra-vermelha': 'Maanaim Terra Vermelha-ES',
+        'cariacica': 'Maanaim Cariacica-ES',
+        'carapina': 'Maanaim Carapina-ES'
+    };
+
+    return `A paz do Senhor,\n` +
+           `Por favor, me inscreva no evento:\n\n` +
+           `🔶 *${classNames[event.class] || event.class.toUpperCase()}*\n` +
+           `🏢 *Área:* ${event.area}\n` +
+           `📅 *Data de início:* ${event.startDate.split('-').reverse().join('/')}\n` +
+           `📍 *Local:* ${maanaimNames[event.maanaim]}`;
+}
+
+// Favoritos
+function toggleFavorite(eventId) {
+    const index = state.favorites.indexOf(eventId);
+    if (index > -1) {
+        state.favorites.splice(index, 1);
+    } else {
+        state.favorites.push(eventId);
+    }
+    saveToLocalStorage();
+    renderEvents();
+}
+
+function loadFavorites() {
+    const saved = localStorage.getItem('seminarioFavorites');
+    if (saved) {
+        state.favorites = JSON.parse(saved);
+    }
+}
+
+// Login e Admin
+function openLoginModal() {
+    document.getElementById('loginModal').classList.add('show');
+}
+
+function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    const user = state.users.find(u => u.username === username && u.password === password);
+
+    if (user) {
+        state.currentUser = user;
+        saveToLocalStorage();
+        updateUserInterface();
+        closeModals();
+        alert('Login realizado com sucesso!');
+    } else {
+        alert('Usuário ou senha incorretos!');
+    }
+}
+
+function handleLogout() {
+    if (confirm('Deseja realmente sair?')) {
+        state.currentUser = null;
+        saveToLocalStorage();
+        updateUserInterface();
+        closeModals();
+        alert('Logout realizado com sucesso!');
+    }
+}
+
+function updateUserInterface() {
+    const loginBtn = document.getElementById('loginBtn');
+    const userInfoContainer = document.getElementById('userInfoContainer');
+    
+    if (state.currentUser) {
+        // Usuário logado - mostrar info e botão de admin
+        loginBtn.style.display = 'none';
+        userInfoContainer.style.display = 'flex';
+        
+        const userName = document.getElementById('userName');
+        const userRole = document.getElementById('userRoleText');
+        
+        if (state.currentUser.role === 'admin') {
+            userName.textContent = state.currentUser.username;
+            userRole.textContent = 'Administrador Geral';
+        } else {
+            userName.textContent = state.currentUser.username;
+            userRole.textContent = getMaanaimName(state.currentUser.maanaim);
+        }
+    } else {
+        // Usuário não logado - mostrar botão de login
+        loginBtn.style.display = 'flex';
+        userInfoContainer.style.display = 'none';
+    }
+}
+
+function openAdminModal() {
+    if (!state.currentUser) return;
+
+    const modal = document.getElementById('adminModal');
+    const userRoleSpan = document.getElementById('userRole');
+    const usuariosTab = document.getElementById('usuariosTab');
+    const aprovacoesTab = document.getElementById('aprovacoesTab');
+    const usuariosSection = document.getElementById('usuariosSection');
+    const aprovacoesSection = document.getElementById('aprovacoesSection');
+    const eventosSection = document.getElementById('eventosSection');
+    const eventosTab = document.querySelector('.admin-tab[data-tab="eventos"]');
+
+    // Reset todas as abas e seções
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+
+    if (state.currentUser.role === 'admin') {
+        userRoleSpan.textContent = 'Administrador';
+        usuariosTab.style.display = 'block';
+        aprovacoesTab.style.display = 'block';
+        usuariosSection.style.display = 'block';
+        aprovacoesSection.style.display = 'block';
+        updatePendingBadge();
+    } else {
+        userRoleSpan.textContent = `Admin - ${getMaanaimName(state.currentUser.maanaim)}`;
+        usuariosTab.style.display = 'none';
+        aprovacoesTab.style.display = 'none';
+        usuariosSection.style.display = 'none';
+        aprovacoesSection.style.display = 'none';
+    }
+
+    // Sempre ativar a aba de eventos por padrão
+    eventosTab.classList.add('active');
+    eventosSection.classList.add('active');
+
+    // Atualizar título da seção de eventos baseado no tipo de usuário
+    const eventSectionTitle = eventosSection.querySelector('h3');
+    if (eventSectionTitle) {
+        if (state.currentUser.role === 'admin') {
+            eventSectionTitle.textContent = 'Adicionar/Editar Evento';
+        } else {
+            eventSectionTitle.textContent = `Gerenciar Eventos - ${getMaanaimName(state.currentUser.maanaim)}`;
+        }
+    }
+
+    modal.classList.add('show');
+    renderAdminEvents();
+    
+    // Só renderizar usuários e aprovações se for admin geral
+    if (state.currentUser.role === 'admin') {
+        renderUsersList();
+        renderPendingUsers();
+    }
+}
+
+function getMaanaimName(maanaim) {
+    const names = {
+        'domingos-martins': 'Domingos Martins',
+        'terra-vermelha': 'Terra Vermelha',
+        'cariacica': 'Cariacica',
+        'carapina': 'Carapina'
+    };
+    return names[maanaim] || maanaim;
+}
+
+// Admin - Eventos
+function renderAdminEvents() {
+    const list = document.getElementById('adminEventsList');
+    let events = state.events;
+
+    // Filter by user permission
+    if (state.currentUser.role === 'maanaim-admin') {
+        events = events.filter(e => e.maanaim === state.currentUser.maanaim);
+    }
+
+    list.innerHTML = '';
+    events.forEach(event => {
+        const item = document.createElement('div');
+        item.className = 'admin-event-item';
+        item.innerHTML = `
+            <div class="admin-event-info">
+                <h4>${event.name}</h4>
+                <p>${event.startDate} - ${getMaanaimName(event.maanaim)}</p>
+            </div>
+            <div class="admin-event-actions">
+                <button class="btn-edit" data-event-id="${event.id}">Editar</button>
+                <button class="btn-delete" data-event-id="${event.id}">Excluir</button>
+            </div>
+        `;
+
+        item.querySelector('.btn-edit').addEventListener('click', () => editEvent(event.id));
+        item.querySelector('.btn-delete').addEventListener('click', () => deleteEvent(event.id));
+
+        list.appendChild(item);
+    });
+
+    // Configurar campo de Maanaim para admin de maanaim
+    const eventMaanaimSelect = document.getElementById('eventMaanaim');
+    if (state.currentUser.role === 'maanaim-admin') {
+        eventMaanaimSelect.value = state.currentUser.maanaim;
+        eventMaanaimSelect.disabled = true;
+        eventMaanaimSelect.style.background = '#F3F4F6';
+        eventMaanaimSelect.style.cursor = 'not-allowed';
+    } else {
+        eventMaanaimSelect.disabled = false;
+        eventMaanaimSelect.style.background = '';
+        eventMaanaimSelect.style.cursor = '';
+    }
+}
+
+function handleEventSubmit(e) {
+    e.preventDefault();
+
+    const eventId = document.getElementById('eventId').value;
+    const eventData = {
+        id: eventId || Date.now().toString(),
+        name: document.getElementById('eventName').value,
+        class: document.getElementById('eventClass').value,
+        startDate: document.getElementById('eventStartDate').value,
+        endDate: document.getElementById('eventEndDate').value,
+        startTime: document.getElementById('eventStartTime').value,
+        endTime: document.getElementById('eventEndTime').value,
+        maanaim: document.getElementById('eventMaanaim').value,
+        area: document.getElementById('eventArea').value,
+        price: parseFloat(document.getElementById('eventPrice').value),
+        deadline: document.getElementById('eventDeadline').value
+    };
+
+    // Check permission
+    if (state.currentUser.role === 'maanaim-admin' && eventData.maanaim !== state.currentUser.maanaim) {
+        alert('Você só pode adicionar eventos do seu Maanaim!');
+        return;
+    }
+
+    if (eventId) {
+        // Update
+        const index = state.events.findIndex(e => e.id === eventId);
+        if (index > -1) {
+            state.events[index] = eventData;
+        }
+    } else {
+        // Create
+        state.events.push(eventData);
+    }
+
+    saveToLocalStorage();
+    renderEvents();
+    renderAdminEvents();
+    renderCalendar();
+    clearEventForm();
+    alert('Evento salvo com sucesso!');
+}
+
+function editEvent(eventId) {
+    const event = state.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    // Check permission
+    if (state.currentUser.role === 'maanaim-admin' && event.maanaim !== state.currentUser.maanaim) {
+        alert('Você só pode editar eventos do seu Maanaim!');
+        return;
+    }
+
+    document.getElementById('eventId').value = event.id;
+    document.getElementById('eventName').value = event.name;
+    document.getElementById('eventClass').value = event.class;
+    document.getElementById('eventStartDate').value = event.startDate;
+    document.getElementById('eventEndDate').value = event.endDate;
+    document.getElementById('eventStartTime').value = event.startTime;
+    document.getElementById('eventEndTime').value = event.endTime;
+    document.getElementById('eventMaanaim').value = event.maanaim;
+    document.getElementById('eventArea').value = event.area;
+    document.getElementById('eventPrice').value = event.price;
+    document.getElementById('eventDeadline').value = event.deadline;
+}
+
+function deleteEvent(eventId) {
+    const event = state.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    // Check permission
+    if (state.currentUser.role === 'maanaim-admin' && event.maanaim !== state.currentUser.maanaim) {
+        alert('Você só pode excluir eventos do seu Maanaim!');
+        return;
+    }
+
+    if (confirm('Tem certeza que deseja excluir este evento?')) {
+        state.events = state.events.filter(e => e.id !== eventId);
+        saveToLocalStorage();
+        renderEvents();
+        renderAdminEvents();
+        renderCalendar();
+    }
+}
+
+function clearEventForm() {
+    document.getElementById('eventForm').reset();
+    document.getElementById('eventId').value = '';
+    
+    // Restaurar o Maanaim se for admin de maanaim
+    if (state.currentUser && state.currentUser.role === 'maanaim-admin') {
+        document.getElementById('eventMaanaim').value = state.currentUser.maanaim;
+    }
+}
+
+// Admin - Usuários
+function renderUsersList() {
+    if (state.currentUser.role !== 'admin') return;
+
+    const list = document.getElementById('usersList');
+    list.innerHTML = '';
+
+    state.users.forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'user-item';
+        
+        const roleText = user.role === 'admin' ? 'Administrador' : 
+                        `Admin - ${getMaanaimName(user.maanaim)}`;
+
+        item.innerHTML = `
+            <div class="user-info">
+                <strong>${user.username}</strong>
+                <p>${roleText}</p>
+            </div>
+            <div class="user-actions">
+                <button class="btn-delete" data-user-id="${user.id}">Excluir</button>
+            </div>
+        `;
+
+        item.querySelector('.btn-delete').addEventListener('click', () => deleteUser(user.id));
+
+        list.appendChild(item);
+    });
+}
+
+function handleUserSubmit(e) {
+    e.preventDefault();
+
+    if (state.currentUser.role !== 'admin') {
+        alert('Apenas administradores podem gerenciar usuários!');
+        return;
+    }
+
+    const userData = {
+        id: Date.now().toString(),
+        username: document.getElementById('newUsername').value,
+        password: document.getElementById('newPassword').value,
+        role: document.getElementById('userRoleSelect').value,
+        maanaim: document.getElementById('userRoleSelect').value === 'maanaim-admin' ? 
+                 document.getElementById('userMaanaim').value : null
+    };
+
+    state.users.push(userData);
+    saveToLocalStorage();
+    renderUsersList();
+    document.getElementById('userForm').reset();
+    alert('Usuário adicionado com sucesso!');
+}
+
+function deleteUser(userId) {
+    if (state.currentUser.role !== 'admin') {
+        alert('Apenas administradores podem gerenciar usuários!');
+        return;
+    }
+
+    if (userId === state.currentUser.id) {
+        alert('Você não pode excluir seu próprio usuário!');
+        return;
+    }
+
+    if (confirm('Tem certeza que deseja excluir este usuário?')) {
+        state.users = state.users.filter(u => u.id !== userId);
+        saveToLocalStorage();
+        renderUsersList();
+    }
+}
+
+// Cadastro de Usuário
+function showRegisterForm() {
+    document.getElementById('loginFormContainer').style.display = 'none';
+    document.getElementById('registerFormContainer').style.display = 'block';
+}
+
+function showLoginForm() {
+    document.getElementById('loginFormContainer').style.display = 'block';
+    document.getElementById('registerFormContainer').style.display = 'none';
+}
+
+function handleRegister(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    const maanaim = document.getElementById('registerMaanaim').value;
+
+    // Verificar se email já existe
+    const emailExists = state.users.some(u => u.username === email) || 
+                       state.pendingUsers.some(u => u.username === email);
+    
+    if (emailExists) {
+        alert('Este email já está cadastrado!');
+        return;
+    }
+
+    // Criar usuário pendente
+    const pendingUser = {
+        id: Date.now().toString(),
+        username: email,
+        password: password,
+        role: 'maanaim-admin',
+        maanaim: maanaim,
+        status: 'pending',
+        requestDate: new Date().toISOString()
+    };
+
+    state.pendingUsers.push(pendingUser);
+    saveToLocalStorage();
+
+    alert('Cadastro solicitado com sucesso! Aguarde a aprovação de um administrador.');
+    document.getElementById('registerForm').reset();
+    showLoginForm();
+}
+
+// Aprovação de Usuários
+function renderPendingUsers() {
+    if (state.currentUser?.role !== 'admin') return;
+
+    const list = document.getElementById('pendingUsersList');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    if (state.pendingUsers.length === 0) {
+        list.innerHTML = '<p style="text-align: center; color: var(--gray-600); padding: 20px;">Nenhuma solicitação pendente</p>';
+        return;
+    }
+
+    state.pendingUsers.forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'user-item';
+        
+        const requestDate = new Date(user.requestDate);
+        const dateStr = requestDate.toLocaleDateString('pt-BR');
+
+        item.innerHTML = `
+            <div class="user-info">
+                <strong>${user.username}</strong>
+                <p>Maanaim: ${getMaanaimName(user.maanaim)} - Solicitado em ${dateStr}</p>
+            </div>
+            <div class="user-actions">
+                <button class="btn-edit" data-user-id="${user.id}">Aprovar</button>
+                <button class="btn-delete" data-user-id="${user.id}">Rejeitar</button>
+            </div>
+        `;
+
+        item.querySelector('.btn-edit').addEventListener('click', () => approveUser(user.id));
+        item.querySelector('.btn-delete').addEventListener('click', () => rejectUser(user.id));
+
+        list.appendChild(item);
+    });
+
+    updatePendingBadge();
+}
+
+function approveUser(userId) {
+    const user = state.pendingUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    if (confirm(`Aprovar o cadastro de ${user.username}?`)) {
+        // Remove da lista de pendentes
+        state.pendingUsers = state.pendingUsers.filter(u => u.id !== userId);
+        
+        // Adiciona aos usuários aprovados
+        delete user.status;
+        delete user.requestDate;
+        state.users.push(user);
+        
+        saveToLocalStorage();
+        renderPendingUsers();
+        renderUsersList();
+        alert('Usuário aprovado com sucesso!');
+    }
+}
+
+function rejectUser(userId) {
+    const user = state.pendingUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    if (confirm(`Rejeitar o cadastro de ${user.username}?`)) {
+        state.pendingUsers = state.pendingUsers.filter(u => u.id !== userId);
+        saveToLocalStorage();
+        renderPendingUsers();
+        alert('Solicitação rejeitada.');
+    }
+}
+
+function updatePendingBadge() {
+    const badge = document.getElementById('pendingBadge');
+    if (!badge) return;
+
+    const count = state.pendingUsers.length;
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// Modals
+function closeModals() {
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.classList.remove('show');
+    });
+    // Reset para mostrar login form
+    showLoginForm();
+}
+
+// Inicializar quando o DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

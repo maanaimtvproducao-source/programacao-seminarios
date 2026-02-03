@@ -1,0 +1,17 @@
+# Arquivos de teste
+test-jsonbin.html
+
+# Guias e documentação de desenvolvimento (opcional - você pode querer manter)
+# Descomente se NÃO quiser enviar os guias para o GitHub:
+# GUIA_JSONBIN.md
+# GUIA_GITHUB_PAGES.md
+# POR_QUE_NAO_JSON_LOCAL.md
+# SOLUCAO_JSON_SIMPLES.md
+# TESTE_JSONBIN.md
+# TESTE.md
+# PUBLICAR_AGORA.md
+# COMO_ABRIR_LOCALMENTE.md
+
+# Sistema
+.DS_Store
+*.log
