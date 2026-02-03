@@ -41,7 +41,7 @@ async function requestNotificationPermission() {
             // Mostrar notificação de teste
             showNotification('🔔 Notificações Ativadas!', {
                 body: 'Você receberá alertas quando novos eventos forem adicionados.',
-                icon: '/logo.png'
+                icon: '/logo/icone.png'
             });
             
             return true;
@@ -88,8 +88,8 @@ function setupEventListener() {
             
             showNotification('🎉 Novo Evento Adicionado!', {
                 body: `${event.name}\n📅 ${formattedDate} às ${event.startTime}\n📍 ${event.area || 'Local não informado'}`,
-                icon: '/logo.png',
-                badge: '/logo.png',
+                icon: '/logo/icone.png',
+                badge: '/logo/icone.png',
                 tag: 'evento-' + snapshot.key,
                 requireInteraction: false
             });
@@ -113,8 +113,8 @@ function showNotification(title, options) {
     
     try {
         const notification = new Notification(title, {
-            icon: '/logo.png',
-            badge: '/logo.png',
+            icon: '/logo/icone.png',
+            badge: '/logo/icone.png',
             ...options
         });
         

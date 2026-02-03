@@ -17,4 +17,5 @@ jsonbin-config.js
 
 # Sistema
 .DS_Store
+**/.DS_Store
 *.log

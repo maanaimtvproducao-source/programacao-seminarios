@@ -1,5 +1,5 @@
 // Service Worker para PWA
-const CACHE_NAME = 'seminarios-v1';
+const CACHE_NAME = 'seminarios-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -7,7 +7,8 @@ const urlsToCache = [
   '/script.js',
   '/firebase-config.js',
   '/notifications.js',
-  '/logo.png'
+  '/logo/logo.png',
+  '/logo/icone.png'
 ];
 
 // Instalar Service Worker e cachear recursos
@@ -54,8 +55,8 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'Novo evento disponível!',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/logo/icone.png',
+    badge: '/logo/icone.png',
     vibrate: [200, 100, 200],
     tag: 'novo-evento',
     requireInteraction: false
