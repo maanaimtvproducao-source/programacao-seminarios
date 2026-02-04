@@ -264,12 +264,14 @@ function renderEvents() {
     // Filter by class
     if (state.selectedFilter !== 'todos' && state.selectedFilter !== 'favoritos') {
         filteredEvents = filteredEvents.filter(e => {
-            // Se não é Terra Vermelha, filtra normalmente por classe
-            if (e.maanaim !== 'terra-vermelha') {
-                return e.class === state.selectedFilter;
+            // REGRA: Ao filtrar por classe, Terra Vermelha NUNCA aparece
+            // (a menos que esteja filtrado especificamente por Terra Vermelha no maanaim)
+            if (e.maanaim === 'terra-vermelha' && state.selectedMaanaim !== 'terra-vermelha') {
+                return false; // Oculta Terra Vermelha
             }
-            // Se é Terra Vermelha, só mostra se estiver filtrado especificamente por esse maanaim
-            return state.selectedMaanaim === 'terra-vermelha';
+            
+            // Para outros maanaims (Domingos Martins), filtra normalmente por classe
+            return e.class === state.selectedFilter;
         });
     }
 
