@@ -476,15 +476,23 @@ function handleEventSubmit(e) {
     e.preventDefault();
 
     const eventId = document.getElementById('eventId').value;
+    const selectedMaanaim = document.getElementById('eventMaanaim').value;
+    
+    // FORÇAR classe = "geral" se for Terra Vermelha
+    let eventClass = document.getElementById('eventClass').value;
+    if (selectedMaanaim === 'terra-vermelha') {
+        eventClass = 'geral';
+    }
+    
     const eventData = {
         id: eventId || Date.now().toString(),
         name: document.getElementById('eventName').value,
-        class: document.getElementById('eventClass').value,
+        class: eventClass,
         startDate: document.getElementById('eventStartDate').value,
         endDate: document.getElementById('eventEndDate').value,
         startTime: document.getElementById('eventStartTime').value,
         endTime: document.getElementById('eventEndTime').value,
-        maanaim: document.getElementById('eventMaanaim').value,
+        maanaim: selectedMaanaim,
         area: document.getElementById('eventArea').value,
         price: parseFloat(document.getElementById('eventPrice').value),
         deadline: document.getElementById('eventDeadline').value
@@ -535,6 +543,9 @@ function editEvent(eventId) {
     document.getElementById('eventPrice').value = event.price;
     document.getElementById('eventDeadline').value = event.deadline;
     
+    // Disparar evento change do maanaim para ocultar classe se for Terra Vermelha
+    document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
+    
     document.getElementById('eventName').focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -564,6 +575,9 @@ function clearEventForm() {
     if (state.currentUser && state.currentUser.role === 'maanaim-admin') {
         document.getElementById('eventMaanaim').value = state.currentUser.maanaim;
     }
+    
+    // Disparar evento change para atualizar visibilidade do campo classe
+    document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
 }
 
 // Users Management
