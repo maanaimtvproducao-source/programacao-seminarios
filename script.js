@@ -261,14 +261,15 @@ function renderEvents() {
         filteredEvents = filteredEvents.filter(e => e.maanaim === state.selectedMaanaim);
     }
 
-    // Filter by class (mas não para Terra Vermelha)
+    // Filter by class
     if (state.selectedFilter !== 'todos' && state.selectedFilter !== 'favoritos') {
         filteredEvents = filteredEvents.filter(e => {
-            // Eventos de Terra Vermelha sempre aparecem, independente do filtro de classe
-            if (e.maanaim === 'terra-vermelha') {
-                return true;
+            // Se não é Terra Vermelha, filtra normalmente por classe
+            if (e.maanaim !== 'terra-vermelha') {
+                return e.class === state.selectedFilter;
             }
-            return e.class === state.selectedFilter;
+            // Se é Terra Vermelha, só mostra se estiver filtrado especificamente por esse maanaim
+            return state.selectedMaanaim === 'terra-vermelha';
         });
     }
 
