@@ -123,6 +123,24 @@ function setupEventListeners() {
     document.getElementById('eventForm').addEventListener('submit', handleEventSubmit);
     document.getElementById('cancelEventBtn').addEventListener('click', clearEventForm);
     
+    // Listener para ocultar classe se Terra Vermelha for selecionado
+    const eventMaanaimSelect = document.getElementById('eventMaanaim');
+    const eventClassGroup = document.getElementById('eventClass').closest('.form-group');
+    
+    eventMaanaimSelect.addEventListener('change', () => {
+        const selectedMaanaim = eventMaanaimSelect.value;
+        if (selectedMaanaim === 'terra-vermelha') {
+            // Ocultar campo classe
+            eventClassGroup.style.display = 'none';
+            document.getElementById('eventClass').removeAttribute('required');
+            document.getElementById('eventClass').value = 'geral'; // Definir valor padrão
+        } else {
+            // Mostrar campo classe
+            eventClassGroup.style.display = '';
+            document.getElementById('eventClass').setAttribute('required', 'required');
+        }
+    });
+    
     document.getElementById('maanaimForm').addEventListener('submit', handleMaanaimSubmit);
     document.getElementById('cancelMaanaimBtn').addEventListener('click', clearMaanaimForm);
     

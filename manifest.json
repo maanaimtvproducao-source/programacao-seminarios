@@ -2,23 +2,30 @@
   "name": "Programação de Seminários",
   "short_name": "Seminários",
   "description": "Confira os eventos disponíveis e compartilhe com o responsável pelas inscrições da sua igreja",
-  "start_url": "/",
+  "start_url": "/programacao-seminarios/",
+  "scope": "/programacao-seminarios/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1976d2",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/logo/icone.png",
-      "sizes": "192x192",
+      "src": "/programacao-seminarios/logo/icone.png",
+      "sizes": "800x800",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/logo/icone.png",
+      "src": "/programacao-seminarios/logo/icone.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/programacao-seminarios/logo/icone.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "categories": ["productivity", "lifestyle"],
@@ -28,8 +35,8 @@
       "name": "Eventos",
       "short_name": "Eventos",
       "description": "Ver eventos disponíveis",
-      "url": "/",
-      "icons": [{ "src": "/logo/icone.png", "sizes": "192x192" }]
+      "url": "/programacao-seminarios/",
+      "icons": [{ "src": "/programacao-seminarios/logo/icone.png", "sizes": "192x192" }]
     }
   ]
 }
