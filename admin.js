@@ -123,9 +123,10 @@ function setupEventListeners() {
     document.getElementById('eventForm').addEventListener('submit', handleEventSubmit);
     document.getElementById('cancelEventBtn').addEventListener('click', clearEventForm);
     
-    // Listener para ocultar classe se Terra Vermelha for selecionado
+    // Listener para ocultar classe e área se Terra Vermelha for selecionado
     const eventMaanaimSelect = document.getElementById('eventMaanaim');
     const eventClassGroup = document.getElementById('eventClass').closest('.form-group');
+    const eventAreaGroup = document.getElementById('eventArea').closest('.form-group');
     
     eventMaanaimSelect.addEventListener('change', () => {
         const selectedMaanaim = eventMaanaimSelect.value;
@@ -134,10 +135,19 @@ function setupEventListeners() {
             eventClassGroup.style.display = 'none';
             document.getElementById('eventClass').removeAttribute('required');
             document.getElementById('eventClass').value = 'geral'; // Definir valor padrão
+            
+            // Ocultar campo área
+            eventAreaGroup.style.display = 'none';
+            document.getElementById('eventArea').removeAttribute('required');
+            document.getElementById('eventArea').value = 'TEMPLO'; // Definir valor padrão
         } else {
             // Mostrar campo classe
             eventClassGroup.style.display = '';
             document.getElementById('eventClass').setAttribute('required', 'required');
+            
+            // Mostrar campo área
+            eventAreaGroup.style.display = '';
+            document.getElementById('eventArea').setAttribute('required', 'required');
         }
     });
     
@@ -478,10 +488,12 @@ function handleEventSubmit(e) {
     const eventId = document.getElementById('eventId').value;
     const selectedMaanaim = document.getElementById('eventMaanaim').value;
     
-    // FORÇAR classe = "geral" se for Terra Vermelha
+    // FORÇAR classe = "geral" e área = "TEMPLO" se for Terra Vermelha
     let eventClass = document.getElementById('eventClass').value;
+    let eventArea = document.getElementById('eventArea').value;
     if (selectedMaanaim === 'terra-vermelha') {
         eventClass = 'geral';
+        eventArea = 'TEMPLO';
     }
     
     const eventData = {
@@ -493,7 +505,7 @@ function handleEventSubmit(e) {
         startTime: document.getElementById('eventStartTime').value,
         endTime: document.getElementById('eventEndTime').value,
         maanaim: selectedMaanaim,
-        area: document.getElementById('eventArea').value,
+        area: eventArea,
         price: parseFloat(document.getElementById('eventPrice').value),
         deadline: document.getElementById('eventDeadline').value
     };

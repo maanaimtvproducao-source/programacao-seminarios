@@ -1,26 +1,153 @@
 // ========================================
-// Sistema de Notificações Push Simplificado
+// Sistema de Notificações com Firebase Cloud Messaging
 // ========================================
 
-// Verificar se notificações estão suportadas
-function isNotificationSupported() {
-    return 'Notification' in window;
-}
+let messaging = null;
+let notificationsEnabled = false;
 
-// Verificar se notificações estão ativadas
-function isNotificationEnabled() {
-    return Notification.permission === 'granted' && 
-           localStorage.getItem('notificationsEnabled') === 'true';
-}
-
-// Solicitar permissão e ativar notificações
-async function requestNotificationPermission() {
+// Inicializar FCM
+async function initNotifications() {
     try {
-        if (!isNotificationSupported()) {
-            alert('❌ Seu navegador não suporta notificações.');
-            return false;
+        // Verificar se o navegador suporta notificações
+        if (!('Notification' in window)) {
+            console.warn('❌ Este navegador não suporta notificações');
+            return;
         }
 
+        // Verificar se Firebase Messaging está disponível
+        if (!firebase.messaging.isSupported()) {
+            console.warn('❌ Firebase Messaging não é suportado neste navegador');
+            // Fallback: usar sistema de notificações simples
+            setupSimpleNotifications();
+            return;
+        }
+
+        // Inicializar Messaging
+        messaging = firebase.messaging();
+        
+        // Verificar permissão atual
+        if (Notification.permission === 'granted') {
+            await setupFCM();
+        }
+        
+        updateNotificationButton();
+        
+    } catch (error) {
+        console.error('❌ Erro ao inicializar notificações:', error);
+        // Fallback: usar sistema simples
+        setupSimpleNotifications();
+    }
+}
+
+// Configurar FCM (Firebase Cloud Messaging)
+async function setupFCM() {
+    try {
+        // Registrar Service Worker do Firebase
+        const registration = await navigator.serviceWorker.register('/programacao-seminarios/firebase-messaging-sw.js');
+        console.log('✅ Service Worker registrado:', registration);
+        
+        // Obter token FCM
+        const token = await messaging.getToken({
+            vapidKey: 'BKxKH-qVvWqQqYZ5mKJZ5qZX5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZ5qZXQ', // Você precisa gerar isso no Firebase Console
+            serviceWorkerRegistration: registration
+        });
+        
+        console.log('🔑 Token FCM obtido:', token);
+        
+        // Salvar token no localStorage (para enviar notificações via servidor)
+        localStorage.setItem('fcmToken', token);
+        
+        // Escutar mensagens em foreground
+        messaging.onMessage((payload) => {
+            console.log('📬 Mensagem recebida em foreground:', payload);
+            showNotification(payload.notification?.title, payload.notification?.body);
+        });
+        
+        // Escutar eventos do Firebase Database
+        setupEventListener();
+        
+        notificationsEnabled = true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao configurar FCM:', error);
+        // Se FCM falhar, usar sistema simples
+        setupSimpleNotifications();
+    }
+}
+
+// Sistema de notificações simples (fallback)
+function setupSimpleNotifications() {
+    console.log('📱 Usando sistema de notificações simples');
+    
+    if (Notification.permission === 'granted') {
+        setupEventListener();
+        notificationsEnabled = true;
+    }
+    
+    updateNotificationButton();
+}
+
+// Escutar novos eventos no Firebase
+function setupEventListener() {
+    const eventsRef = firebase.database().ref('events');
+    const lastEventTime = Date.now();
+    
+    // Escutar apenas eventos NOVOS (adicionados após ativar notificações)
+    eventsRef.on('child_added', (snapshot) => {
+        const event = snapshot.val();
+        
+        // Verificar se é realmente um evento novo
+        const eventId = parseInt(event.id);
+        if (eventId > lastEventTime) {
+            // Evento foi adicionado AGORA
+            const maanaimName = event.maanaim === 'terra-vermelha' ? 'Terra Vermelha' : 'Domingos Martins';
+            showNotification(
+                '🎉 Novo Evento Disponível!',
+                `${event.name} - ${maanaimName}\n📅 ${formatDate(event.startDate)}`
+            );
+        }
+    });
+    
+    console.log('✅ Listener de eventos configurado');
+}
+
+// Mostrar notificação
+function showNotification(title, body) {
+    if (!notificationsEnabled || Notification.permission !== 'granted') {
+        return;
+    }
+    
+    try {
+        // Se tiver Service Worker, usar ele
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then((registration) => {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: '/programacao-seminarios/logo/icone.png',
+                    badge: '/programacao-seminarios/logo/icone.png',
+                    vibrate: [200, 100, 200],
+                    tag: 'novo-evento',
+                    requireInteraction: false
+                });
+            });
+        } else {
+            // Fallback: notificação normal
+            new Notification(title, {
+                body: body,
+                icon: '/programacao-seminarios/logo/icone.png',
+                vibrate: [200, 100, 200]
+            });
+        }
+        
+        console.log('✅ Notificação enviada:', title);
+    } catch (error) {
+        console.error('❌ Erro ao mostrar notificação:', error);
+    }
+}
+
+// Solicitar permissão para notificações
+async function requestNotificationPermission() {
+    try {
         console.log('📱 Solicitando permissão para notificações...');
         
         const permission = await Notification.requestPermission();
@@ -28,184 +155,69 @@ async function requestNotificationPermission() {
         if (permission === 'granted') {
             console.log('✅ Permissão concedida!');
             
-            // Marcar como ativado
-            localStorage.setItem('notificationsEnabled', 'true');
-            localStorage.setItem('notificationsStartTime', Date.now().toString());
+            // Tentar usar FCM primeiro
+            if (messaging) {
+                await setupFCM();
+            } else {
+                // Fallback: sistema simples
+                setupSimpleNotifications();
+            }
             
-            // Configurar listener para novos eventos
-            setupEventListener();
-            
-            // Atualizar botão
             updateNotificationButton();
             
             // Mostrar notificação de teste
-            showNotification('🔔 Notificações Ativadas!', {
-                body: 'Você receberá alertas quando novos eventos forem adicionados.',
-                icon: '/logo/icone.png'
-            });
-            
-            return true;
-            
-        } else if (permission === 'denied') {
-            console.warn('❌ Permissão negada');
-            alert('❌ Você bloqueou as notificações.\n\nPara ativar:\n1. Clique no ícone de cadeado 🔒 na barra de endereço\n2. Em "Notificações", selecione "Permitir"');
-            return false;
-            
+            showNotification(
+                '🔔 Alertas Ativados!',
+                'Você será notificado quando novos eventos forem adicionados'
+            );
         } else {
-            console.warn('⚠️ Permissão não concedida');
-            return false;
+            console.log('❌ Permissão negada');
+            alert('Por favor, permita notificações para receber alertas de novos eventos.');
         }
-        
     } catch (error) {
         console.error('❌ Erro ao solicitar permissão:', error);
-        alert('❌ Erro ao ativar notificações. Tente novamente.');
-        return false;
-    }
-}
-
-// Configurar listener para detectar novos eventos no Firebase
-function setupEventListener() {
-    if (typeof firebase === 'undefined' || !firebase.database) {
-        console.warn('⚠️ Firebase não está disponível');
-        return;
-    }
-    
-    const db = firebase.database();
-    const startTime = parseInt(localStorage.getItem('notificationsStartTime') || '0');
-    
-    // Listener para novos eventos
-    db.ref('events').on('child_added', (snapshot) => {
-        const event = snapshot.val();
-        const now = Date.now();
-        
-        // Só notificar eventos adicionados DEPOIS de ativar notificações
-        // (ignorar primeiros 10 segundos para não notificar eventos já existentes)
-        if (now - startTime > 10000) {
-            console.log('🆕 Novo evento detectado:', event.name);
-            
-            const eventDate = new Date(event.startDate);
-            const formattedDate = eventDate.toLocaleDateString('pt-BR');
-            
-            showNotification('🎉 Novo Evento Adicionado!', {
-                body: `${event.name}\n📅 ${formattedDate} às ${event.startTime}\n📍 ${event.area || 'Local não informado'}`,
-                icon: '/logo/icone.png',
-                badge: '/logo/icone.png',
-                tag: 'evento-' + snapshot.key,
-                requireInteraction: false
-            });
-        }
-    });
-    
-    console.log('👂 Ouvindo novos eventos no Firebase...');
-}
-
-// Mostrar notificação
-function showNotification(title, options) {
-    if (!isNotificationSupported()) {
-        console.warn('Notificações não suportadas');
-        return;
-    }
-    
-    if (Notification.permission !== 'granted') {
-        console.warn('Permissão de notificação não concedida');
-        return;
-    }
-    
-    try {
-        const notification = new Notification(title, {
-            icon: '/logo/icone.png',
-            badge: '/logo/icone.png',
-            ...options
-        });
-        
-        // Ao clicar na notificação, focar na janela
-        notification.onclick = () => {
-            window.focus();
-            notification.close();
-        };
-        
-        // Auto-fechar após 10 segundos
-        setTimeout(() => {
-            notification.close();
-        }, 10000);
-        
-        console.log('✅ Notificação exibida:', title);
-        
-    } catch (error) {
-        console.error('❌ Erro ao mostrar notificação:', error);
+        alert('Erro ao ativar notificações. Tente novamente.');
     }
 }
 
 // Atualizar botão de notificações
 function updateNotificationButton() {
-    const alertBtn = document.querySelector('.alert-btn');
-    if (!alertBtn) return;
+    const button = document.getElementById('notificationBtn');
+    if (!button) return;
     
-    if (isNotificationEnabled()) {
-        // Notificações ativadas
-        alertBtn.textContent = '✅ Alertas ativados';
-        alertBtn.style.backgroundColor = '#4CAF50';
-        alertBtn.style.color = 'white';
-        alertBtn.style.cursor = 'default';
-        alertBtn.disabled = false;
-        
-        alertBtn.onclick = () => {
-            alert('✅ Notificações já estão ativadas!\n\nVocê receberá alertas sempre que um novo evento for adicionado.\n\nPara desativar, bloqueie as notificações nas configurações do navegador.');
-        };
-        
-    } else if (Notification.permission === 'denied') {
-        // Permissão negada
-        alertBtn.textContent = '🔒 Notificações bloqueadas';
-        alertBtn.style.backgroundColor = '#f44336';
-        alertBtn.style.color = 'white';
-        alertBtn.style.cursor = 'pointer';
-        alertBtn.disabled = false;
-        
-        alertBtn.onclick = () => {
-            alert('❌ As notificações estão bloqueadas.\n\nPara ativar:\n1. Clique no ícone de cadeado 🔒 na barra de endereço\n2. Em "Notificações", selecione "Permitir"\n3. Recarregue a página');
-        };
-        
+    if (Notification.permission === 'granted' && notificationsEnabled) {
+        button.textContent = '🔔 Alertas Ativos';
+        button.classList.add('active');
+        button.style.background = '#10b981';
+        button.disabled = true;
     } else {
-        // Não ativado ainda
-        alertBtn.textContent = '🔔 Ativar alertas';
-        alertBtn.style.backgroundColor = '';
-        alertBtn.style.color = '';
-        alertBtn.style.cursor = 'pointer';
-        alertBtn.disabled = false;
-        
-        alertBtn.onclick = requestNotificationPermission;
+        button.textContent = '🔔 Ativar Alertas';
+        button.classList.remove('active');
+        button.style.background = '';
+        button.disabled = false;
     }
 }
 
-// Desativar notificações
-function disableNotifications() {
-    localStorage.removeItem('notificationsEnabled');
-    localStorage.removeItem('notificationsStartTime');
-    
-    // Remover listeners
-    if (typeof firebase !== 'undefined' && firebase.database) {
-        firebase.database().ref('events').off('child_added');
-    }
-    
-    updateNotificationButton();
-    console.log('🔕 Notificações desativadas');
+// Formatar data
+function formatDate(dateString) {
+    const date = new Date(dateString + 'T00:00:00');
+    return date.toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+    });
 }
 
-// Inicializar quando o DOM carregar
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🔔 Sistema de notificações carregado');
-    
-    // Aguardar Firebase carregar
-    setTimeout(() => {
-        // Atualizar botão
-        updateNotificationButton();
-        
-        // Se já estiver ativado, configurar listener
-        if (isNotificationEnabled()) {
-            console.log('✅ Notificações já estavam ativadas, reativando listener...');
-            setupEventListener();
-        }
-    }, 1500);
-});
+// Inicializar quando o DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initNotifications, 1000);
+    });
+} else {
+    setTimeout(initNotifications, 1000);
+}
 
-console.log('📱 notifications.js carregado');
+// Expor função globalmente para o botão
+window.requestNotificationPermission = requestNotificationPermission;
+
+console.log('📱 Sistema de notificações carregado');
