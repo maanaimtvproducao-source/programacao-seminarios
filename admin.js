@@ -32,7 +32,120 @@ async function init() {
     await loadFromLocalStorage();
     cleanOldEvents();
     setupEventListeners();
+    setupRealtimeListeners(); // Adicionar listeners em tempo real
     checkAuth();
+}
+
+// ========================================
+// ATUALIZAÇÃO EM TEMPO REAL
+// ========================================
+
+function setupRealtimeListeners() {
+    // Listener para eventos
+    const eventsRef = firebase.database().ref('events');
+    
+    // Quando um evento é adicionado
+    eventsRef.on('child_added', (snapshot) => {
+        const newEvent = snapshot.val();
+        const existingIndex = state.events.findIndex(e => e.id === newEvent.id);
+        
+        if (existingIndex === -1) {
+            // Evento realmente novo, adicionar
+            state.events.push(newEvent);
+            console.log('✅ Novo evento detectado:', newEvent.name);
+            
+            // Atualizar lista de eventos (se estiver visível)
+            if (state.currentUser) {
+                renderEventsList();
+            }
+        }
+    });
+    
+    // Quando um evento é modificado
+    eventsRef.on('child_changed', (snapshot) => {
+        const updatedEvent = snapshot.val();
+        const index = state.events.findIndex(e => e.id === updatedEvent.id);
+        
+        if (index !== -1) {
+            state.events[index] = updatedEvent;
+            console.log('✏️ Evento atualizado:', updatedEvent.name);
+            
+            // Atualizar lista de eventos
+            if (state.currentUser) {
+                renderEventsList();
+            }
+        }
+    });
+    
+    // Quando um evento é removido
+    eventsRef.on('child_removed', (snapshot) => {
+        const removedEvent = snapshot.val();
+        state.events = state.events.filter(e => e.id !== removedEvent.id);
+        console.log('🗑️ Evento removido:', removedEvent.name);
+        
+        // Atualizar lista de eventos
+        if (state.currentUser) {
+            renderEventsList();
+        }
+    });
+    
+    // Listener para usuários pendentes
+    const pendingUsersRef = firebase.database().ref('pendingUsers');
+    
+    pendingUsersRef.on('value', (snapshot) => {
+        const pending = [];
+        snapshot.forEach((child) => {
+            pending.push(child.val());
+        });
+        
+        state.pendingUsers = pending;
+        
+        // Atualizar badge de aprovações pendentes
+        if (state.currentUser?.role === 'admin') {
+            updatePendingBadge();
+            renderPendingList();
+        }
+    });
+    
+    // Listener para maanaims
+    const maanaimsRef = firebase.database().ref('maanaims');
+    
+    maanaimsRef.on('value', (snapshot) => {
+        const maanaims = [];
+        snapshot.forEach((child) => {
+            maanaims.push(child.val());
+        });
+        
+        // Verificar se houve mudança
+        if (JSON.stringify(maanaims) !== JSON.stringify(state.maanaims)) {
+            state.maanaims = maanaims;
+            console.log('🏛️ Maanaims atualizados');
+            
+            if (state.currentUser) {
+                renderMaanaimSelect();
+                if (state.currentUser.role === 'admin') {
+                    renderMaanaimsList();
+                }
+            }
+        }
+    });
+    
+    // Listener para usuários (apenas para admin)
+    if (state.currentUser?.role === 'admin') {
+        const usersRef = firebase.database().ref('users');
+        
+        usersRef.on('value', (snapshot) => {
+            const users = [];
+            snapshot.forEach((child) => {
+                users.push(child.val());
+            });
+            
+            state.users = users;
+            renderUsersList();
+        });
+    }
+    
+    console.log('🔄 Listeners em tempo real configurados (Admin)');
 }
 
 // Limpeza automática de eventos passados

@@ -16,10 +16,81 @@ async function init() {
     await loadFromLocalStorage();
     cleanOldEvents();
     setupEventListeners();
+    setupRealtimeListeners(); // Adicionar listeners em tempo real
     renderMaanaimGrid();
     renderCalendar();
     renderEvents();
     loadFavorites();
+}
+
+// ========================================
+// ATUALIZAÇÃO EM TEMPO REAL
+// ========================================
+
+function setupRealtimeListeners() {
+    // Listener para eventos
+    const eventsRef = firebase.database().ref('events');
+    
+    // Quando um evento é adicionado
+    eventsRef.on('child_added', (snapshot) => {
+        const newEvent = snapshot.val();
+        const existingIndex = state.events.findIndex(e => e.id === newEvent.id);
+        
+        if (existingIndex === -1) {
+            // Evento realmente novo, adicionar
+            state.events.push(newEvent);
+            console.log('✅ Novo evento detectado:', newEvent.name);
+            
+            // Atualizar interface
+            renderCalendar();
+            renderEvents();
+        }
+    });
+    
+    // Quando um evento é modificado
+    eventsRef.on('child_changed', (snapshot) => {
+        const updatedEvent = snapshot.val();
+        const index = state.events.findIndex(e => e.id === updatedEvent.id);
+        
+        if (index !== -1) {
+            state.events[index] = updatedEvent;
+            console.log('✏️ Evento atualizado:', updatedEvent.name);
+            
+            // Atualizar interface
+            renderCalendar();
+            renderEvents();
+        }
+    });
+    
+    // Quando um evento é removido
+    eventsRef.on('child_removed', (snapshot) => {
+        const removedEvent = snapshot.val();
+        state.events = state.events.filter(e => e.id !== removedEvent.id);
+        console.log('🗑️ Evento removido:', removedEvent.name);
+        
+        // Atualizar interface
+        renderCalendar();
+        renderEvents();
+    });
+    
+    // Listener para maanaims
+    const maanaimsRef = firebase.database().ref('maanaims');
+    
+    maanaimsRef.on('value', (snapshot) => {
+        const maanaims = [];
+        snapshot.forEach((child) => {
+            maanaims.push(child.val());
+        });
+        
+        // Verificar se houve mudança
+        if (JSON.stringify(maanaims) !== JSON.stringify(state.maanaims)) {
+            state.maanaims = maanaims;
+            console.log('🏛️ Maanaims atualizados');
+            renderMaanaimGrid();
+        }
+    });
+    
+    console.log('🔄 Listeners em tempo real configurados');
 }
 
 // LocalStorage com JSONBin
