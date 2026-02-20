@@ -545,7 +545,7 @@ function initDM() {
     // Filtrar por classe: zera filtro de data
     pageState.dmClass = this.value;
     pageState.dmDate  = null;
-    pageState.calInstance.setSelectedISO(null);
+    pageState.calInstance?.setSelectedISO(null);
     renderDMPanel();
   });
 
