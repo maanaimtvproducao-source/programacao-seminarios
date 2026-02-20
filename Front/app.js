@@ -59,7 +59,8 @@ function firebaseToAppEvent(e) {
     title:        (e.name || "").toUpperCase(),
     priceAdult:   parseFloat(e.price) || 0,
     regUntilISO:  e.deadline,
-    inviteImage:  "./assets/convite-tv.png"
+    // Usa imagem salva no Firebase; fallback para imagem padrão
+    inviteImage:  e.inviteImage || "./assets/convite-tv.png"
   };
 }
 
@@ -359,33 +360,87 @@ function refreshHome() {
 }
 
 // ─── Página: Domingos Martins ─────────────────────────────────────────────────
+
+// Renderiza painel DM: mostra todos eventos (com filtros opcionais de data e classe)
+function renderDMPanel() {
+  const panel = document.getElementById("panel-dm");
+  if (!panel) return;
+  const sub    = panel.querySelector("[data-ep-sub]");
+  const listEl = panel.querySelector("[data-ep-list]");
+
+  let events = EVENTS.filter(e => e.location === "dm");
+
+  // Filtro por data (opcional — quando usuário clica no calendário)
+  if (pageState.selectedISO) {
+    events = events.filter(e => e.startISO === pageState.selectedISO);
+  }
+
+  // Filtro por classe
+  if (pageState.currentClass && pageState.currentClass !== "Todas") {
+    events = events.filter(e => e.class === pageState.currentClass);
+  }
+
+  // Subtítulo
+  if (pageState.selectedISO && pageState.currentClass !== "Todas") {
+    sub.textContent = `${fmtBR(pageState.selectedISO)} • ${classLabel(pageState.currentClass)}`;
+  } else if (pageState.selectedISO) {
+    sub.textContent = `Eventos em ${fmtBR(pageState.selectedISO)}`;
+  } else if (pageState.currentClass !== "Todas") {
+    sub.textContent = `Classe: ${classLabel(pageState.currentClass)}`;
+  } else {
+    sub.textContent = `${events.length} evento(s) encontrado(s)`;
+  }
+
+  if (!events.length) {
+    listEl.innerHTML = `
+      <div style="display:grid;place-items:center;text-align:center;padding:26px 0;color:var(--muted)">
+        <div style="font-weight:900;color:var(--text)">Nenhum evento encontrado</div>
+        <div style="margin-top:4px;font-size:12px">Tente outro filtro ou outra data.</div>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = "";
+  for (const e of events) {
+    const item = document.createElement("div");
+    item.className = "event";
+    const clsText = e.class && e.class !== "geral" ? ` • ${escapeHtml(classLabel(e.class))}` : "";
+    item.innerHTML = `
+      <div style="min-width:0">
+        <h4>${escapeHtml(e.title)}</h4>
+        <p>${fmtBR(e.startISO)} • ${escapeHtml(e.startTime)}${clsText}</p>
+      </div>
+      <button class="btn" type="button" style="height:36px">Ver</button>`;
+    item.querySelector("button").addEventListener("click", () => modalOpen(e));
+    listEl.appendChild(item);
+  }
+}
+
 function initDM() {
   const select = document.getElementById("class-select");
   pageState.currentClass = select?.value || "Todas";
-
-  function filteredList(iso) {
-    return EVENTS
-      .filter(e => e.location === "dm")
-      .filter(e => e.startISO === iso)
-      .filter(e => pageState.currentClass === "Todas" || e.class === pageState.currentClass);
-  }
+  pageState.selectedISO  = null;
 
   pageState.calInstance = initCalendar("cal-dm", {
-    markerISOs:  () => [...new Set(EVENTS.filter(e => e.location === "dm").map(e => e.startISO))],
+    markerISOs: () => [...new Set(EVENTS.filter(e => e.location === "dm").map(e => e.startISO))],
     onSelectISO: (iso) => {
-      pageState.selectedISO = iso;
-      renderEventsPanel("panel-dm", iso, filteredList(iso));
+      // Clique no mesmo dia → limpa filtro de data
+      if (pageState.selectedISO === iso) {
+        pageState.selectedISO = null;
+        pageState.calInstance.setSelectedISO(null);
+      } else {
+        pageState.selectedISO = iso;
+      }
+      renderDMPanel();
     }
   });
 
-  renderEventsPanel("panel-dm", null, []);
+  renderDMPanel(); // Mostra todos os eventos logo de início
 
   if (select) {
     select.addEventListener("change", () => {
       pageState.currentClass = select.value;
-      if (pageState.selectedISO) {
-        renderEventsPanel("panel-dm", pageState.selectedISO, filteredList(pageState.selectedISO));
-      }
+      renderDMPanel();
     });
   }
 }
@@ -393,14 +448,7 @@ function initDM() {
 function refreshDM() {
   if (!pageState.calInstance) return;
   pageState.calInstance.render();
-
-  if (pageState.selectedISO) {
-    const filtered = EVENTS
-      .filter(e => e.location === "dm")
-      .filter(e => e.startISO === pageState.selectedISO)
-      .filter(e => pageState.currentClass === "Todas" || e.class === pageState.currentClass);
-    renderEventsPanel("panel-dm", pageState.selectedISO, filtered);
-  }
+  renderDMPanel();
 }
 
 // ─── Página: Terra Vermelha ───────────────────────────────────────────────────

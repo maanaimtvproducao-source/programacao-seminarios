@@ -1,5 +1,31 @@
 // Sistema de Administração - Programação de Seminários
 
+// ─── Imgur ────────────────────────────────────────────────────────────────────
+// Client ID: crie em https://api.imgur.com/oauth2/addclient (Anonymous usage)
+const IMGUR_CLIENT_ID = 'c9a6efb3d7932fd';
+
+async function uploadToImgur(file) {
+    const status = document.getElementById('eventImageStatus');
+    if (status) status.textContent = '⏳ Enviando imagem para Imgur...';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const resp = await fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: { 'Authorization': `Client-ID ${IMGUR_CLIENT_ID}` },
+        body: formData
+    });
+
+    const json = await resp.json();
+    if (!resp.ok || !json.success) {
+        throw new Error(json.data?.error || 'Falha no upload para Imgur');
+    }
+
+    if (status) status.textContent = '✅ Imagem enviada!';
+    return json.data.link; // URL pública da imagem
+}
+
 // Gerenciamento de Estado
 const state = {
     currentUser: null,
@@ -243,26 +269,52 @@ function setupEventListeners() {
     
     eventMaanaimSelect.addEventListener('change', () => {
         const selectedMaanaim = eventMaanaimSelect.value;
-        if (selectedMaanaim === 'terra-vermelha') {
-            // Ocultar campo classe
+        const isTerraVermelha = selectedMaanaim === 'terra-vermelha';
+
+        if (isTerraVermelha) {
+            // Ocultar campo classe e área (fixos para TV)
             eventClassGroup.style.display = 'none';
             document.getElementById('eventClass').removeAttribute('required');
-            document.getElementById('eventClass').value = 'geral'; // Definir valor padrão
+            document.getElementById('eventClass').value = 'geral';
             
-            // Ocultar campo área
             eventAreaGroup.style.display = 'none';
             document.getElementById('eventArea').removeAttribute('required');
-            document.getElementById('eventArea').value = 'TEMPLO'; // Definir valor padrão
+            document.getElementById('eventArea').value = 'TEMPLO';
+
+            // Mostrar campo de imagem
+            const imageRow = document.getElementById('eventImageRow');
+            if (imageRow) imageRow.style.display = '';
         } else {
-            // Mostrar campo classe
+            // Mostrar campo classe e área
             eventClassGroup.style.display = '';
             document.getElementById('eventClass').setAttribute('required', 'required');
             
-            // Mostrar campo área
             eventAreaGroup.style.display = '';
             document.getElementById('eventArea').setAttribute('required', 'required');
+
+            // Ocultar campo de imagem
+            const imageRow = document.getElementById('eventImageRow');
+            if (imageRow) imageRow.style.display = 'none';
+            document.getElementById('eventImageUrl').value = '';
+            document.getElementById('eventImagePreview').style.display = 'none';
+            document.getElementById('eventImageStatus').textContent = '';
         }
     });
+
+    // Preview da imagem ao selecionar arquivo
+    const eventImageInput = document.getElementById('eventImage');
+    if (eventImageInput) {
+        eventImageInput.addEventListener('change', () => {
+            const file = eventImageInput.files[0];
+            if (!file) return;
+            const preview = document.getElementById('eventImagePreview');
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            document.getElementById('eventImageStatus').textContent = '📷 Imagem selecionada. Será enviada ao salvar.';
+            // Limpa URL anterior (será re-gerada ao salvar)
+            document.getElementById('eventImageUrl').value = '';
+        });
+    }
     
     document.getElementById('maanaimForm').addEventListener('submit', handleMaanaimSubmit);
     document.getElementById('cancelMaanaimBtn').addEventListener('click', clearMaanaimForm);
@@ -595,7 +647,7 @@ function renderAdminEvents() {
     });
 }
 
-function handleEventSubmit(e) {
+async function handleEventSubmit(e) {
     e.preventDefault();
 
     const eventId = document.getElementById('eventId').value;
@@ -607,6 +659,18 @@ function handleEventSubmit(e) {
     if (selectedMaanaim === 'terra-vermelha') {
         eventClass = 'geral';
         eventArea = 'TEMPLO';
+    }
+
+    // Upload de imagem para Imgur (apenas Terra Vermelha)
+    let inviteImage = document.getElementById('eventImageUrl')?.value || '';
+    const imageFile = document.getElementById('eventImage')?.files?.[0];
+    if (selectedMaanaim === 'terra-vermelha' && imageFile) {
+        try {
+            inviteImage = await uploadToImgur(imageFile);
+        } catch (err) {
+            alert('Erro ao enviar imagem: ' + err.message);
+            return;
+        }
     }
     
     const eventData = {
@@ -620,7 +684,8 @@ function handleEventSubmit(e) {
         maanaim: selectedMaanaim,
         area: eventArea,
         price: parseFloat(document.getElementById('eventPrice').value),
-        deadline: document.getElementById('eventDeadline').value
+        deadline: document.getElementById('eventDeadline').value,
+        inviteImage: inviteImage || null
     };
 
     // Check permission
@@ -668,8 +733,20 @@ function editEvent(eventId) {
     document.getElementById('eventPrice').value = event.price;
     document.getElementById('eventDeadline').value = event.deadline;
     
-    // Disparar evento change do maanaim para ocultar classe se for Terra Vermelha
+    // Disparar evento change do maanaim para ocultar/mostrar campos de TV
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
+
+    // Carregar imagem existente (se Terra Vermelha)
+    if (event.inviteImage) {
+        document.getElementById('eventImageUrl').value = event.inviteImage;
+        const preview = document.getElementById('eventImagePreview');
+        if (preview) {
+            preview.src = event.inviteImage;
+            preview.style.display = 'block';
+        }
+        const status = document.getElementById('eventImageStatus');
+        if (status) status.textContent = '🖼️ Imagem atual carregada. Selecione outra para substituir.';
+    }
     
     document.getElementById('eventName').focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -701,8 +778,18 @@ function clearEventForm() {
         document.getElementById('eventMaanaim').value = state.currentUser.maanaim;
     }
     
-    // Disparar evento change para atualizar visibilidade do campo classe
+    // Disparar evento change para atualizar visibilidade dos campos
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
+
+    // Limpar campos de imagem
+    const imgInput = document.getElementById('eventImage');
+    if (imgInput) imgInput.value = '';
+    const imgUrl = document.getElementById('eventImageUrl');
+    if (imgUrl) imgUrl.value = '';
+    const imgPreview = document.getElementById('eventImagePreview');
+    if (imgPreview) { imgPreview.src = ''; imgPreview.style.display = 'none'; }
+    const imgStatus = document.getElementById('eventImageStatus');
+    if (imgStatus) imgStatus.textContent = '';
 }
 
 // Users Management

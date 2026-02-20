@@ -164,6 +164,18 @@
                                 <input type="date" id="eventDeadline" required>
                             </div>
                         </div>
+
+                        <!-- Campo de imagem: só aparece para Terra Vermelha -->
+                        <div class="form-row" id="eventImageRow" style="display:none">
+                            <div class="form-group" style="width:100%">
+                                <label for="eventImage">Imagem do Convite (Imgur):</label>
+                                <input type="file" id="eventImage" accept="image/png,image/jpeg,image/jpg,image/webp">
+                                <div id="eventImageStatus" style="margin-top:6px; font-size:13px; color:#6b7280;"></div>
+                                <img id="eventImagePreview" src="" alt="Preview" style="display:none; margin-top:8px; max-width:260px; border-radius:10px; border:1px solid #e5e7eb;">
+                                <input type="hidden" id="eventImageUrl">
+                            </div>
+                        </div>
+
                         <div class="form-buttons">
                             <button type="submit" class="btn-primary">Salvar Evento</button>
                             <button type="button" id="cancelEventBtn" class="btn-secondary">Cancelar</button>
