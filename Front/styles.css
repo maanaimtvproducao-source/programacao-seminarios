@@ -54,6 +54,7 @@ a{color:inherit; text-decoration:none}
   cursor:pointer;
 }
 .btn svg{width:16px; height:16px}
+.btn-download{ text-decoration:none; font-size:13px; font-weight:500; }
 .btn.primary{
   background:var(--brand);
   color:#fff;
@@ -395,7 +396,7 @@ button{ font-family:inherit; }
 
   .header-top{ padding:8px 0; gap:8px; }
 
-  #btn-notify{
+  .btn-download{
     font-size:12px; padding:0 10px; height:32px;
     white-space:nowrap;
   }
