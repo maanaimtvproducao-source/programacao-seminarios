@@ -461,32 +461,35 @@ function refreshHome() {
 
 // ─── Página: Domingos Martins ─────────────────────────────────────────────────
 
-// Renderiza painel DM: mostra todos eventos (com filtros opcionais de data e classe)
+// Lê os dois filtros do estado e renderiza
 function renderDMPanel() {
-  const panel = document.getElementById("panel-dm");
+  const panel  = document.getElementById("panel-dm");
   if (!panel) return;
+
   const sub    = panel.querySelector("[data-ep-sub]");
   const listEl = panel.querySelector("[data-ep-list]");
 
+  // Lê os filtros diretamente do pageState (nunca de closures)
+  const dataFiltro   = pageState.dmDate  || null;
+  const classeFiltro = pageState.dmClass || "Todas";
+
   let events = EVENTS.filter(e => e.location === "dm");
 
-  // Filtro por data (opcional — quando usuário clica no calendário)
-  if (pageState.selectedISO) {
-    events = events.filter(e => e.startISO === pageState.selectedISO);
+  if (dataFiltro) {
+    events = events.filter(e => e.startISO === dataFiltro);
   }
 
-  // Filtro por classe
-  if (pageState.currentClass && pageState.currentClass !== "Todas") {
-    events = events.filter(e => e.class === pageState.currentClass);
+  if (classeFiltro !== "Todas") {
+    events = events.filter(e => e.class === classeFiltro);
   }
 
-  // Subtítulo
-  if (pageState.selectedISO && pageState.currentClass !== "Todas") {
-    sub.textContent = `${fmtBR(pageState.selectedISO)} • ${classLabel(pageState.currentClass)}`;
-  } else if (pageState.selectedISO) {
-    sub.textContent = `Eventos em ${fmtBR(pageState.selectedISO)}`;
-  } else if (pageState.currentClass !== "Todas") {
-    sub.textContent = `Classe: ${classLabel(pageState.currentClass)}`;
+  // Subtítulo dinâmico
+  if (dataFiltro && classeFiltro !== "Todas") {
+    sub.textContent = `${fmtBR(dataFiltro)} • ${classLabel(classeFiltro)}`;
+  } else if (dataFiltro) {
+    sub.textContent = `Eventos em ${fmtBR(dataFiltro)}`;
+  } else if (classeFiltro !== "Todas") {
+    sub.textContent = `Classe: ${classLabel(classeFiltro)}`;
   } else {
     sub.textContent = `${events.length} evento(s) encontrado(s)`;
   }
@@ -517,32 +520,32 @@ function renderDMPanel() {
 }
 
 function initDM() {
-  const select = document.getElementById("class-select");
-  pageState.currentClass = select?.value || "Todas";
-  pageState.selectedISO  = null;
+  // Inicializar filtros no pageState
+  pageState.dmDate  = null;
+  pageState.dmClass = "Todas";
 
+  // Calendário
   pageState.calInstance = initCalendar("cal-dm", {
     markerISOs: () => [...new Set(EVENTS.filter(e => e.location === "dm").map(e => e.startISO))],
     onSelectISO: (iso) => {
-      // Clique no mesmo dia → limpa filtro de data
-      if (pageState.selectedISO === iso) {
-        pageState.selectedISO = null;
+      if (pageState.dmDate === iso) {
+        // Clicar na mesma data limpa o filtro de data
+        pageState.dmDate = null;
         pageState.calInstance.setSelectedISO(null);
       } else {
-        pageState.selectedISO = iso;
+        pageState.dmDate = iso;
       }
       renderDMPanel();
     }
   });
 
-  renderDMPanel(); // Mostra todos os eventos logo de início
+  // Filtro de classe — lê direto do DOM no momento do evento
+  document.getElementById("class-select")?.addEventListener("change", function () {
+    pageState.dmClass = this.value;
+    renderDMPanel();
+  });
 
-  if (select) {
-    select.addEventListener("change", () => {
-      pageState.currentClass = select.value;
-      renderDMPanel();
-    });
-  }
+  renderDMPanel();
 }
 
 function refreshDM() {
@@ -707,4 +710,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page === "home") initHome();
   if (page === "dm")   initDM();
   if (page === "tv")   initTV();
+});
+
 });

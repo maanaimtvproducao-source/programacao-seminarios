@@ -1,4 +1,4 @@
-const CACHE = "seminarios-front-v2";
+const CACHE = "seminarios-front-v3";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
