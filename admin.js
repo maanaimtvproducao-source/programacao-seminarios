@@ -1,29 +1,27 @@
 // Sistema de Administração - Programação de Seminários
 
-// ─── Imgur ────────────────────────────────────────────────────────────────────
-// Client ID: crie em https://api.imgur.com/oauth2/addclient (Anonymous usage)
-const IMGUR_CLIENT_ID = 'c9a6efb3d7932fd';
+// ─── ImgBB ────────────────────────────────────────────────────────────────────
+const IMGBB_API_KEY = '5fc0b9708b595459cd0019d22da24f30';
 
 async function uploadToImgur(file) {
     const status = document.getElementById('eventImageStatus');
-    if (status) status.textContent = '⏳ Enviando imagem para Imgur...';
+    if (status) status.textContent = '⏳ Enviando imagem...';
 
     const formData = new FormData();
     formData.append('image', file);
 
-    const resp = await fetch('https://api.imgur.com/3/image', {
+    const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: 'POST',
-        headers: { 'Authorization': `Client-ID ${IMGUR_CLIENT_ID}` },
         body: formData
     });
 
     const json = await resp.json();
     if (!resp.ok || !json.success) {
-        throw new Error(json.data?.error || 'Falha no upload para Imgur');
+        throw new Error(json.error?.message || 'Falha no upload da imagem');
     }
 
     if (status) status.textContent = '✅ Imagem enviada!';
-    return json.data.link; // URL pública da imagem
+    return json.data.url; // URL pública da imagem
 }
 
 // Gerenciamento de Estado
