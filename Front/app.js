@@ -264,15 +264,17 @@ function modalOpen(event) {
 
   document.getElementById("m-reguntil").textContent = fmtBR(event.regUntilISO);
 
-  const shareText = [
-    event.title,
-    `Local: ${locationLabel(event.location)}`,
-    `Área: ${event.area || "—"}`,
-    `Início: ${fmtBR(event.startISO)} ${event.startTime}`,
-    `Fim: ${fmtBR(event.endISO)} ${event.endTime}`,
-    `Valor: ${event.priceAdult ? moneyBRL(event.priceAdult) + " (adulto)" : "Gratuito"}`,
-    `Inscrições até: ${fmtBR(event.regUntilISO)}`
-  ].join("\n");
+  const clsInfo = event.class && event.class !== "geral" ? `\n* Classe: ${classLabel(event.class)}` : "";
+  const shareText = `APDSJ
+
+Quero me inscrever nesse evento:
+* ${event.title}
+* Local: ${locationLabel(event.location)}
+* Área: ${event.area || "—"}${clsInfo}
+* Início: ${fmtBR(event.startISO)} às ${event.startTime}
+* Fim: ${fmtBR(event.endISO)} às ${event.endTime}
+* Valor: ${event.priceAdult ? moneyBRL(event.priceAdult) + " (adulto)" : "Gratuito"}
+* Inscrições até: ${fmtBR(event.regUntilISO)}`;
 
   modal.dataset.share = shareText;
 }
