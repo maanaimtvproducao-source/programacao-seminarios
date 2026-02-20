@@ -64,21 +64,119 @@ function firebaseToAppEvent(e) {
   };
 }
 
-// ─── Firebase listeners em tempo real ─────────────────────────────────────────
+// ─── Cache localStorage ───────────────────────────────────────────────────────
+const CACHE_KEY = "seminarios_v1_events";
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutos
+
+function saveCache(events) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), events }));
+  } catch (_) {}
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, events } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return events;
+  } catch (_) { return null; }
+}
+
+function isValidEvent(ev) {
+  return ev.startISO && ev.endISO && ev.regUntilISO;
+}
+
+function sortEvents() {
+  EVENTS.sort((a, b) => a.startISO.localeCompare(b.startISO));
+}
+
+// ─── Firebase: carga inicial + listeners incrementais ─────────────────────────
+// Estratégia:
+// 1. Mostra cache instantaneamente (zero requisição Firebase)
+// 2. Faz UMA leitura do Firebase para sincronizar
+// 3. Usa child_added/changed/removed (só trafega o que mudou, não tudo)
+// 4. Desconecta quando aba fica em background (economiza conexões simultâneas)
+
+const _initialIds = new Set(); // IDs da carga inicial (para não notificar como novos)
+let   _initialDone = false;
+
 function setupFirebase() {
-  db.ref("events").on("value", (snapshot) => {
+  // 1. Carregar cache imediatamente (sem usar Firebase)
+  const cached = loadCache();
+  if (cached && cached.length) {
+    EVENTS = cached;
+    refreshCurrentPage();
+  }
+
+  // 2. Carregar do Firebase uma única vez
+  db.ref("events").once("value", (snapshot) => {
     EVENTS = [];
     snapshot.forEach((child) => {
+      _initialIds.add(child.key);
       const ev = firebaseToAppEvent(child.val());
-      // Só inclui eventos com datas válidas
-      if (ev.startISO && ev.endISO && ev.regUntilISO) {
-        EVENTS.push(ev);
-      }
+      if (isValidEvent(ev)) EVENTS.push(ev);
     });
+    sortEvents();
+    saveCache(EVENTS);
+    refreshCurrentPage();
+    _initialDone = true;
 
-    // Ordena por data de início
-    EVENTS.sort((a, b) => a.startISO.localeCompare(b.startISO));
+    // 3. Após carga inicial, ativar listeners incrementais
+    _startIncrementalListeners();
+  });
 
+  // 4. Desconectar/reconectar conforme visibilidade da aba
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      db.goOffline();
+    } else {
+      db.goOnline();
+    }
+  });
+}
+
+function _startIncrementalListeners() {
+  const ref = db.ref("events");
+
+  // Novo evento adicionado
+  ref.on("child_added", (snapshot) => {
+    if (!_initialDone) return;
+    if (_initialIds.has(snapshot.key)) return; // já tínhamos na carga inicial
+
+    const ev = firebaseToAppEvent(snapshot.val());
+    if (!isValidEvent(ev) || EVENTS.find(e => e.id === ev.id)) return;
+
+    EVENTS.push(ev);
+    sortEvents();
+    saveCache(EVENTS);
+    refreshCurrentPage();
+
+    // Notificar usuário
+    if (_notificationsEnabled) {
+      showNotification("🎉 Novo Evento!", `${ev.title} — ${fmtBR(ev.startISO)}`);
+    }
+  });
+
+  // Evento editado
+  ref.on("child_changed", (snapshot) => {
+    if (!_initialDone) return;
+    const ev = firebaseToAppEvent(snapshot.val());
+    const idx = EVENTS.findIndex(e => e.id === ev.id);
+    if (idx !== -1) {
+      EVENTS[idx] = ev;
+      saveCache(EVENTS);
+      refreshCurrentPage();
+    }
+  });
+
+  // Evento removido
+  ref.on("child_removed", (snapshot) => {
+    if (!_initialDone) return;
+    const key = snapshot.val()?.id || snapshot.key;
+    EVENTS = EVENTS.filter(e => e.id !== key);
+    saveCache(EVENTS);
     refreshCurrentPage();
   });
 }
@@ -530,24 +628,14 @@ function refreshTV() {
 }
 
 // ─── Notificações ─────────────────────────────────────────────────────────────
-let notificationsSetup = false;
-let lastKnownEventCount = 0;
+let _notificationsEnabled = false;
 
 function setupNotifications() {
-  if (!("Notification" in window)) return;
-  if (notificationsSetup) return;
-  notificationsSetup = true;
-
-  // Monitora novos eventos em tempo real
-  let firstLoad = true;
-  db.ref("events").on("value", (snapshot) => {
-    const count = snapshot.numChildren();
-    if (!firstLoad && count > lastKnownEventCount) {
-      showNotification("🎉 Novo Evento Disponível!", "Um novo evento foi adicionado à programação.");
-    }
-    if (firstLoad) firstLoad = false;
-    lastKnownEventCount = count;
-  });
+  // Notificações são disparadas dentro de _startIncrementalListeners()
+  // quando _notificationsEnabled = true
+  if (Notification.permission === "granted") {
+    _notificationsEnabled = true;
+  }
 }
 
 function showNotification(title, body) {
@@ -567,13 +655,13 @@ function showNotification(title, body) {
 }
 
 async function requestNotificationPermission() {
-  const btn = document.getElementById("btn-notify");
   if (!("Notification" in window)) {
     alert("Este navegador não suporta notificações.");
     return;
   }
   const perm = await Notification.requestPermission();
   if (perm === "granted") {
+    _notificationsEnabled = true;
     updateNotifyBtn();
     showNotification("🔔 Alertas Ativados!", "Você receberá avisos quando novos eventos forem adicionados.");
   } else {

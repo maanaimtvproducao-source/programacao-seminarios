@@ -3,12 +3,46 @@
 // ─── ImgBB ────────────────────────────────────────────────────────────────────
 const IMGBB_API_KEY = '5fc0b9708b595459cd0019d22da24f30';
 
+// Comprime a imagem antes de enviar (economiza banda do ImgBB e do Firebase)
+// Reduz para max 1200px de largura e converte para JPEG 80% de qualidade
+async function compressImage(file, maxWidth = 1200, quality = 0.80) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            let { width, height } = img;
+
+            // Redimensionar se necessário
+            if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width  = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+                URL.revokeObjectURL(img.src);
+                resolve(blob);
+            }, 'image/jpeg', quality);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+}
+
 async function uploadToImgur(file) {
     const status = document.getElementById('eventImageStatus');
-    if (status) status.textContent = '⏳ Enviando imagem...';
 
+    // 1. Comprimir
+    if (status) status.textContent = '⏳ Comprimindo imagem...';
+    const compressed = await compressImage(file);
+    const savedKB = Math.round((file.size - compressed.size) / 1024);
+    if (status) status.textContent = `⏳ Enviando... (economizado: ${savedKB > 0 ? savedKB + ' KB' : 'já otimizada'})`;
+
+    // 2. Upload
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', compressed, 'convite.jpg');
 
     const resp = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: 'POST',
@@ -20,8 +54,8 @@ async function uploadToImgur(file) {
         throw new Error(json.error?.message || 'Falha no upload da imagem');
     }
 
-    if (status) status.textContent = '✅ Imagem enviada!';
-    return json.data.url; // URL pública da imagem
+    if (status) status.textContent = `✅ Imagem enviada! (${Math.round(compressed.size / 1024)} KB)`;
+    return json.data.url;
 }
 
 // Gerenciamento de Estado
