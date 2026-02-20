@@ -1,0 +1,26 @@
+{
+  "name": "Programação de Seminários",
+  "short_name": "Seminários",
+  "description": "Confira os eventos do Maanaim e compartilhe com o responsável pelas inscrições",
+  "start_url": "/programacao-seminarios/front/",
+  "scope": "/programacao-seminarios/front/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4175DA",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "prefer_related_applications": false
+}

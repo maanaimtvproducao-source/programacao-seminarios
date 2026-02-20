@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="theme-color" content="#4175DA"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="Seminários"/>
+  <title>Maanaim de Terra Vermelha</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <link rel="manifest" href="./manifest.json"/>
+  <link rel="apple-touch-icon" href="./assets/logo.png"/>
+  <link rel="icon" type="image/png" href="./assets/logo.png"/>
+</head>
+<body data-page="tv">
+  <header class="header">
+    <div class="container">
+      <div class="header-top">
+        <div class="brand">
+          <div class="logo"><img src="./assets/logo.png" alt="Logo"/></div>
+          <div class="brand-title">
+          </div>
+        </div>
+
+        <button class="btn" id="btn-notify" type="button">🔔 Ativar alertas</button>
+      </div>
+
+      <div class="header-nav">
+        <div class="pills">
+          <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-8 12-8 12s-8-7.007-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> Escolha o local:</span>
+          <a class="pill" id="pill-home" href="./index.html">Todos</a>
+          <a class="pill" id="pill-dm" href="./domingos-martins.html">Maanaim de Domingos Martins</a>
+          <a class="pill" id="pill-tv" href="./terra-vermelha.html">Maanaim de Terra Vermelha</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+<div class="page-title">Maanaim de Terra Vermelha</div>
+<div class="page-sub">Carrossel de convites • clique em <b>Detalhes</b> para ver as informações.</div>
+
+<div style="height:14px"></div>
+
+<section class="card">
+  <div class="carousel-media">
+    <img id="tv-img" src="./assets/convite-tv.png" alt="Convite"/>
+    <div class="gradient"></div>
+
+    <div class="tags">
+      <span class="tag" id="tv-tag" style="display:none">CLASSE</span>
+      <span class="tag dark" id="tv-loc">Maanaim Terra Vermelha-ES</span>
+    </div>
+
+    <div class="carousel-caption">
+      <div class="c1" id="tv-t1">REUNIÃO ESPECIAL</div>
+      <div class="c2" id="tv-t2">25/01/2026 • 15:00</div>
+    </div>
+
+    <button class="carousel-arrow left" id="tv-prev" type="button" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <button class="carousel-arrow right" id="tv-next" type="button" aria-label="Próximo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+  </div>
+
+  <div class="card-content">
+    <div class="carousel-bottom">
+      <div>
+        <div class="card-title">Convites e avisos</div>
+        <div class="card-sub" id="tv-counter">Use as setas para navegar • 1/1</div>
+      </div>
+      <button class="btn primary" id="tv-details" type="button">Detalhes</button>
+    </div>
+
+    <div class="dots" id="tv-dots" aria-label="Indicadores"></div>
+  </div>
+</section>
+
+  </main>
+
+  <footer class="container footer">
+    <div class="hr"></div>
+    PROGRAMAÇÃO DE SEMINÁRIOS • 2026
+    <div>Igreja Cristã Maranata</div>
+  </footer>
+
+  <!-- Modal (reutilizável) -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Detalhes do evento">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="m1" id="m-title">DETALHES</div>
+        <div class="m2" id="m-sub">Maanaim</div>
+        <button class="modal-close" id="modal-close" type="button" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="date-grid">
+          <div class="date-card" id="m-start">
+            <div class="l">INÍCIO</div>
+            <div class="d">--</div>
+            <div class="m">---</div>
+            <div class="t">--:--</div>
+          </div>
+          <div class="date-card" id="m-end">
+            <div class="l">FIM</div>
+            <div class="d">--</div>
+            <div class="m">---</div>
+            <div class="t">--:--</div>
+          </div>
+        </div>
+
+        <div class="rows">
+          <div class="row">
+            <div class="ico">🏢</div>
+            <div>
+              <div class="lab">Área</div>
+              <div class="val" id="m-area">—</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="ico">📍</div>
+            <div>
+              <div class="lab">Local</div>
+              <div class="val" id="m-local">—</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="ico">💲</div>
+            <div>
+              <div class="lab">Valores</div>
+              <div class="val green" id="m-price">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="warn">
+          <div class="wico">⏰</div>
+          <div>
+            <div class="w1">Inscrições até</div>
+            <div class="w2" id="m-reguntil">—</div>
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <div class="small">Compartilhe com o responsável de inscrições:</div>
+          <div class="modal-actions">
+            <button class="btn green" id="btn-wa" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> WhatsApp</button>
+            <button class="btn" id="btn-copy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copiar texto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
