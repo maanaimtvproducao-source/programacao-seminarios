@@ -380,3 +380,106 @@ main{padding:22px 0 10px}
   .hide-sm{display:none}
   .show-sm{display:inline}
 }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVIDADE MOBILE
+   ═══════════════════════════════════════════════ */
+
+/* Reset padrão de botões */
+button{ font-family:inherit; }
+.cal-cell{ border:none; background:none; padding:0; }
+
+/* ── Header mobile ── */
+@media (max-width:600px){
+  .logo{ width:72px; height:54px; border-radius:10px; }
+
+  .header-top{ padding:8px 0; gap:8px; }
+
+  #btn-notify{
+    font-size:12px; padding:0 10px; height:32px;
+    white-space:nowrap;
+  }
+
+  /* Pills: scroll horizontal sem quebrar linha */
+  .header-nav{ padding:0 0 8px; }
+  .pills{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:2px;
+    /* Esconder scrollbar */
+    scrollbar-width:none;
+  }
+  .pills::-webkit-scrollbar{ display:none; }
+  .badge{ display:none; } /* "Escolha o local:" oculto no mobile */
+  .pill{ white-space:nowrap; flex-shrink:0; }
+}
+
+/* ── Grid: coluna única no mobile ── */
+@media (max-width:640px){
+  .grid{ gap:12px; }
+  main{ padding:14px 0 10px; }
+  .page-title{ font-size:17px; }
+  .page-sub{ font-size:13px; }
+}
+
+/* ── Calendário: toque mais fácil ── */
+@media (max-width:600px){
+  .cal-cell{ height:42px; font-size:14px; border-radius:10px; }
+  .empty{ height:42px; }
+  .calendar-body{ padding:10px 8px; }
+  .cal-grid{ gap:3px; }
+  .cal-week{ gap:3px; font-size:10px; }
+  .dot{ width:5px; height:5px; bottom:4px; }
+}
+
+/* ── Lista de eventos ── */
+@media (max-width:600px){
+  .events-list{ gap:8px; }
+  .event{ padding:12px; border-radius:14px; }
+  .event h4{ font-size:13px; }
+  .event p{ font-size:11px; }
+  .card-header{ padding:12px 12px 8px; }
+  .card-content{ padding:10px 12px 12px; }
+}
+
+/* ── Filtro de classe ── */
+@media (max-width:520px){
+  .filter-row{ flex-direction:column; align-items:stretch; gap:8px; }
+  .select{ width:100%; }
+}
+
+/* ── Modal: Bottom Sheet no mobile ── */
+@media (max-width:600px){
+  .modal{
+    align-items:flex-end;
+    padding:0;
+  }
+  .modal-card{
+    width:100%;
+    border-radius:22px 22px 0 0;
+    max-height:92dvh; /* dynamic viewport height */
+    overflow-y:auto;
+  }
+  .modal-body{ padding:14px 16px; }
+  .modal-head{ padding:14px 16px; }
+  .modal-head .m1{ font-size:16px; }
+  .date-card .d{ font-size:22px; }
+  .modal-actions{ grid-template-columns:1fr 1fr; gap:8px; }
+  .modal-actions .btn{ font-size:12px; padding:0 8px; }
+}
+
+/* ── Carousel (Terra Vermelha) mobile ── */
+@media (max-width:600px){
+  .carousel-caption .c1{ font-size:15px; }
+  .carousel-caption .c2{ font-size:12px; }
+  .carousel-arrow{ width:34px; height:34px; border-radius:10px; }
+  .carousel-bottom{ gap:8px; }
+}
+
+/* ── Toque: aumentar área clicável geral ── */
+@media (hover:none) and (pointer:coarse){
+  .btn{ min-height:40px; }
+  .pill{ padding:8px 14px; }
+  .dotbtn{ width:12px; height:12px; }
+}
