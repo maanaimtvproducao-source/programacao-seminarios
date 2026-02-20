@@ -1,17 +1,6 @@
-const CACHE = "seminarios-front-v1";
-const URLS  = [
-  "./",
-  "./index.html",
-  "./domingos-martins.html",
-  "./terra-vermelha.html",
-  "./styles.css",
-  "./app.js",
-  "./assets/logo.png",
-  "./assets/convite-tv.png"
-];
+const CACHE = "seminarios-front-v2";
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(URLS)));
   self.skipWaiting();
 });
 
@@ -24,9 +13,22 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
+// Estratégia: network first, cache como fallback
 self.addEventListener("fetch", (e) => {
+  // Ignora requisições de outros domínios (Firebase, googleapis, etc)
+  if (!e.request.url.startsWith(self.location.origin)) return;
+
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((response) => {
+        // Salva no cache apenas respostas válidas
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(e.request)) // offline: usa cache
   );
 });
 
@@ -35,9 +37,9 @@ self.addEventListener("notificationclick", (e) => {
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const c of list) {
-        if (c.url.includes("programacao-seminarios/front") && "focus" in c) return c.focus();
+        if (c.url.includes("programacao-seminarios") && "focus" in c) return c.focus();
       }
-      if (clients.openWindow) return clients.openWindow("/programacao-seminarios/front/");
+      if (clients.openWindow) return clients.openWindow("/programacao-seminarios/Front/");
     })
   );
 });
