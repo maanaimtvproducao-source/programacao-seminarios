@@ -520,28 +520,32 @@ function renderDMPanel() {
 }
 
 function initDM() {
-  // Inicializar filtros no pageState
   pageState.dmDate  = null;
   pageState.dmClass = "Todas";
 
-  // Calendário
   pageState.calInstance = initCalendar("cal-dm", {
     markerISOs: () => [...new Set(EVENTS.filter(e => e.location === "dm").map(e => e.startISO))],
     onSelectISO: (iso) => {
       if (pageState.dmDate === iso) {
-        // Clicar na mesma data limpa o filtro de data
+        // Mesma data: limpa filtro de data (volta a mostrar tudo)
         pageState.dmDate = null;
         pageState.calInstance.setSelectedISO(null);
       } else {
-        pageState.dmDate = iso;
+        // Nova data: zera filtro de classe, aplica data
+        pageState.dmDate  = iso;
+        pageState.dmClass = "Todas";
+        const sel = document.getElementById("class-select");
+        if (sel) sel.value = "Todas";
       }
       renderDMPanel();
     }
   });
 
-  // Filtro de classe — lê direto do DOM no momento do evento
   document.getElementById("class-select")?.addEventListener("change", function () {
+    // Filtrar por classe: zera filtro de data
     pageState.dmClass = this.value;
+    pageState.dmDate  = null;
+    pageState.calInstance.setSelectedISO(null);
     renderDMPanel();
   });
 
