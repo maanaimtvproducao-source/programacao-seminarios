@@ -715,5 +715,3 @@ document.addEventListener("DOMContentLoaded", () => {
   if (page === "dm")   initDM();
   if (page === "tv")   initTV();
 });
-
-});
