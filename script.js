@@ -28,56 +28,55 @@ async function init() {
 // ========================================
 
 function setupRealtimeListeners() {
-    console.log('🔄 Configurando listeners em tempo real...');
-    
-    // Usar 'value' para escutar mudanças em toda a estrutura
+    // Listener para eventos
     const eventsRef = firebase.database().ref('events');
     
-    // Flag para ignorar primeira carga
-    let isFirstLoad = true;
-    
-    eventsRef.on('value', (snapshot) => {
-        if (isFirstLoad) {
-            // Primeira vez, apenas marcar como carregado
-            isFirstLoad = false;
-            console.log('✅ Listener de eventos ativo');
-            return;
-        }
+    // Quando um evento é adicionado
+    eventsRef.on('child_added', (snapshot) => {
+        const newEvent = snapshot.val();
+        const existingIndex = state.events.findIndex(e => e.id === newEvent.id);
         
-        // Atualizar todos os eventos
-        const newEvents = [];
-        snapshot.forEach((child) => {
-            newEvents.push(child.val());
-        });
-        
-        // Verificar se houve mudança real
-        if (JSON.stringify(newEvents) !== JSON.stringify(state.events)) {
-            console.log('🔄 Eventos atualizados pelo Firebase!');
-            console.log(`   Antes: ${state.events.length} eventos`);
-            console.log(`   Depois: ${newEvents.length} eventos`);
-            
-            state.events = newEvents;
+        if (existingIndex === -1) {
+            // Evento realmente novo, adicionar
+            state.events.push(newEvent);
+            console.log('✅ Novo evento detectado:', newEvent.name);
             
             // Atualizar interface
             renderCalendar();
             renderEvents();
-            
-            // Mostrar notificação visual (opcional)
-            showUpdateNotification();
         }
+    });
+    
+    // Quando um evento é modificado
+    eventsRef.on('child_changed', (snapshot) => {
+        const updatedEvent = snapshot.val();
+        const index = state.events.findIndex(e => e.id === updatedEvent.id);
+        
+        if (index !== -1) {
+            state.events[index] = updatedEvent;
+            console.log('✏️ Evento atualizado:', updatedEvent.name);
+            
+            // Atualizar interface
+            renderCalendar();
+            renderEvents();
+        }
+    });
+    
+    // Quando um evento é removido
+    eventsRef.on('child_removed', (snapshot) => {
+        const removedEvent = snapshot.val();
+        state.events = state.events.filter(e => e.id !== removedEvent.id);
+        console.log('🗑️ Evento removido:', removedEvent.name);
+        
+        // Atualizar interface
+        renderCalendar();
+        renderEvents();
     });
     
     // Listener para maanaims
     const maanaimsRef = firebase.database().ref('maanaims');
-    let isFirstMaanaimLoad = true;
     
     maanaimsRef.on('value', (snapshot) => {
-        if (isFirstMaanaimLoad) {
-            isFirstMaanaimLoad = false;
-            console.log('✅ Listener de maanaims ativo');
-            return;
-        }
-        
         const maanaims = [];
         snapshot.forEach((child) => {
             maanaims.push(child.val());
@@ -85,55 +84,13 @@ function setupRealtimeListeners() {
         
         // Verificar se houve mudança
         if (JSON.stringify(maanaims) !== JSON.stringify(state.maanaims)) {
-            console.log('🏛️ Maanaims atualizados pelo Firebase!');
             state.maanaims = maanaims;
+            console.log('🏛️ Maanaims atualizados');
             renderMaanaimGrid();
         }
     });
     
-    console.log('✅ Listeners em tempo real configurados e ativos');
-}
-
-// Mostrar notificação de atualização (feedback visual)
-function showUpdateNotification() {
-    // Criar elemento de notificação
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        background: #10b981;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 10000;
-        font-weight: 500;
-        animation: slideIn 0.3s ease-out;
-    `;
-    notification.textContent = '✅ Eventos atualizados!';
-    
-    // Adicionar animação
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(400px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(400px); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    document.body.appendChild(notification);
-    
-    // Remover após 3 segundos
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-out';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    console.log('🔄 Listeners em tempo real configurados');
 }
 
 // LocalStorage com JSONBin
