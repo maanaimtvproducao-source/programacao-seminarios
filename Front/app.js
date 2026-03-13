@@ -59,8 +59,8 @@ function firebaseToAppEvent(e) {
     title:        (e.name || "").toUpperCase(),
     priceAdult:   parseFloat(e.price) || 0,
     regUntilISO:  e.deadline,
-    // Usa imagem salva no Firebase; fallback para imagem padrão
-    inviteImage:  e.inviteImage || "./assets/convite-tv.png"
+    // Imagem do convite (null quando não houver)
+    inviteImage:  e.inviteImage || null
   };
 }
 
@@ -566,6 +566,7 @@ function initTV() {
 function refreshTV() {
   const slides = EVENTS.filter(e => e.location === "tv");
 
+  const mediaEl   = document.querySelector(".carousel-media");
   const imgEl     = document.getElementById("tv-img");
   const tagEl     = document.getElementById("tv-tag");
   const locEl     = document.getElementById("tv-loc");
@@ -578,23 +579,45 @@ function refreshTV() {
   if (!imgEl) return; // página ainda não carregou
 
   if (!slides.length) {
-    // Nenhum evento cadastrado
+    // Nenhum evento cadastrado: mostrar só a mensagem
+    if (mediaEl)   mediaEl.classList.add("carousel-empty");
+    if (imgEl)     { imgEl.style.display = "none"; imgEl.removeAttribute("src"); }
     if (tagEl)      tagEl.style.display = "none";
-    if (t1El)       t1El.textContent    = "Nenhum evento disponível";
-    if (t2El)       t2El.textContent    = "";
+    if (locEl)      locEl.style.display = "none";
+    if (t1El)       t1El.textContent = "Nenhum evento disponível";
+    if (t2El)       t2El.textContent = "";
     if (counterEl)  counterEl.textContent = "";
-    if (dotsEl)     dotsEl.innerHTML    = "";
+    if (dotsEl)     dotsEl.innerHTML = "";
     if (btnDetails) btnDetails.style.display = "none";
+    const prevBtn = document.getElementById("tv-prev");
+    const nextBtn = document.getElementById("tv-next");
+    if (prevBtn) prevBtn.style.display = "none";
+    if (nextBtn) nextBtn.style.display = "none";
     return;
   }
 
   if (pageState.tvIndex >= slides.length) pageState.tvIndex = 0;
   if (btnDetails) btnDetails.style.display = "";
+  if (mediaEl)    mediaEl.classList.remove("carousel-empty");
+
+  // Mostrar setas e pré-carregar imagens para troca rápida
+  const prevBtn = document.getElementById("tv-prev");
+  const nextBtn = document.getElementById("tv-next");
+  if (prevBtn) prevBtn.style.display = "";
+  if (nextBtn) nextBtn.style.display = "";
+  if (locEl)   locEl.style.display = "";
+  slides.forEach(s => { if (s.inviteImage) { const i = new Image(); i.src = s.inviteImage; } });
 
   function renderSlide() {
     const e = slides[pageState.tvIndex];
 
-    imgEl.src = e.inviteImage;
+    if (e.inviteImage) {
+      imgEl.src = e.inviteImage;
+      imgEl.style.display = "";
+    } else {
+      imgEl.style.display = "none";
+      imgEl.removeAttribute("src");
+    }
 
     if (e.class && e.class !== "geral") {
       tagEl.style.display  = "inline-flex";
