@@ -38,11 +38,17 @@ async function loadFromFirebase() {
         
         if (data) {
             console.log('✅ Dados carregados com sucesso do Firebase!');
+            // Firebase pode retornar objetos em vez de arrays; garantir arrays
+            const toArray = (val) => {
+                if (!val) return [];
+                if (Array.isArray(val)) return val;
+                return Object.values(val);
+            };
             return {
-                events: data.events || [],
-                maanaims: data.maanaims || [],
-                users: data.users || [],
-                pendingUsers: data.pendingUsers || []
+                events: toArray(data.events),
+                maanaims: toArray(data.maanaims),
+                users: toArray(data.users),
+                pendingUsers: toArray(data.pendingUsers)
             };
         } else {
             console.log('⚠️ Nenhum dado encontrado. Inicializando estrutura...');

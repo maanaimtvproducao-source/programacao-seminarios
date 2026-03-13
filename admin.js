@@ -114,7 +114,7 @@ function setupRealtimeListeners() {
             
             // Atualizar lista de eventos (se estiver visível)
             if (state.currentUser) {
-                renderEventsList();
+                renderAdminEvents();
             }
         }
     });
@@ -130,7 +130,7 @@ function setupRealtimeListeners() {
             
             // Atualizar lista de eventos
             if (state.currentUser) {
-                renderEventsList();
+                renderAdminEvents();
             }
         }
     });
@@ -143,7 +143,7 @@ function setupRealtimeListeners() {
         
         // Atualizar lista de eventos
         if (state.currentUser) {
-            renderEventsList();
+            renderAdminEvents();
         }
     });
     
@@ -161,7 +161,7 @@ function setupRealtimeListeners() {
         // Atualizar badge de aprovações pendentes
         if (state.currentUser?.role === 'admin') {
             updatePendingBadge();
-            renderPendingList();
+            renderPendingUsers();
         }
     });
     
