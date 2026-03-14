@@ -292,7 +292,22 @@ function setupEventListeners() {
 
     // Forms
     document.getElementById('eventForm').addEventListener('submit', handleEventSubmit);
+    document.getElementById('eventSaveAndNewBtn').addEventListener('click', () => {
+        window._eventSaveAndNew = true;
+        const form = document.getElementById('eventForm');
+        if (form.checkValidity()) {
+            form.requestSubmit();
+        } else {
+            form.reportValidity();
+            window._eventSaveAndNew = false;
+        }
+    });
     document.getElementById('cancelEventBtn').addEventListener('click', clearEventForm);
+    document.getElementById('eventCopyBtn').addEventListener('click', applyCopyFromEvent);
+    document.getElementById('eventCopyFrom').addEventListener('change', () => {
+        if (document.getElementById('eventCopyFrom').value) applyCopyFromEvent();
+    });
+    setupTimeInputs();
     
     // Listener para ocultar classe e área se Terra Vermelha for selecionado
     const eventMaanaimSelect = document.getElementById('eventMaanaim');
@@ -641,6 +656,91 @@ function getMaanaimName(slug) {
     return maanaim ? maanaim.name : slug;
 }
 
+// ─── Utilitários de data (dd/mm/aaaa ↔ YYYY-MM-DD) ─────────────────────────────
+function parseDateInput(val) {
+    if (!val || typeof val !== 'string') return '';
+    const s = val.trim().replace(/\s/g, '');
+    // dd/mm/yyyy ou dd-mm-yyyy ou yyyy-mm-dd
+    let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (m) {
+        const d = m[1].padStart(2, '0'), mo = m[2].padStart(2, '0'), y = m[3];
+        return `${y}-${mo}-${d}`;
+    }
+    m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    return '';
+}
+
+function formatDateForInput(iso) {
+    if (!iso || typeof iso !== 'string') return '';
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
+function formatTimeOnInput(el) {
+    const v = el.value.replace(/\D/g, '');
+    if (v.length <= 2) el.value = v;
+    else if (v.length === 3) el.value = v.slice(0, 2) + ':' + v[2];
+    else el.value = v.slice(0, 2) + ':' + v.slice(2, 4);
+}
+
+function formatTimeOnBlur(el) {
+    const v = el.value.replace(/\D/g, '');
+    if (v.length === 2) el.value = v + ':00';
+    else if (v.length === 3) el.value = v.slice(0, 2) + ':' + v[2] + '0';
+    else if (v.length >= 4) el.value = v.slice(0, 2) + ':' + v.slice(2, 4);
+}
+
+function parseTimeInput(val) {
+    if (!val || typeof val !== 'string') return '';
+    const v = val.trim().replace(/\D/g, '');
+    if (v.length === 2) return v + ':00';
+    if (v.length >= 4) return v.slice(0, 2) + ':' + v.slice(2, 4);
+    const m = val.match(/^(\d{1,2}):(\d{1,2})$/);
+    if (m) return m[1].padStart(2, '0') + ':' + m[2].padStart(2, '0');
+    return '';
+}
+
+function setupTimeInputs() {
+    ['eventStartTime', 'eventEndTime'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => formatTimeOnInput(el));
+        el.addEventListener('blur', () => formatTimeOnBlur(el));
+    });
+}
+
+function applyCopyFromEvent() {
+    const id = document.getElementById('eventCopyFrom').value;
+    if (!id) return;
+    const event = state.events.find(e => e.id === id);
+    if (!event) return;
+    fillEventForm(event, false);
+    document.getElementById('eventName').focus();
+}
+
+function fillEventForm(event, forEdit) {
+    document.getElementById('eventId').value = forEdit ? event.id : '';
+    document.getElementById('eventName').value = forEdit ? event.name : '';
+    document.getElementById('eventClass').value = event.class || 'geral';
+    document.getElementById('eventStartDate').value = formatDateForInput(event.startDate);
+    document.getElementById('eventEndDate').value = formatDateForInput(event.endDate);
+    document.getElementById('eventStartTime').value = event.startTime || '';
+    document.getElementById('eventEndTime').value = event.endTime || '';
+    document.getElementById('eventMaanaim').value = event.maanaim || '';
+    document.getElementById('eventArea').value = event.area || 'TEMPLO';
+    document.getElementById('eventPrice').value = event.price ?? '';
+    document.getElementById('eventDeadline').value = formatDateForInput(event.deadline);
+    document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
+    if (event.inviteImage) {
+        document.getElementById('eventImageUrl').value = event.inviteImage;
+        const preview = document.getElementById('eventImagePreview');
+        if (preview) { preview.src = event.inviteImage; preview.style.display = 'block'; }
+        const status = document.getElementById('eventImageStatus');
+        if (status) status.textContent = '🖼️ Imagem do evento copiada.';
+    }
+}
+
 // Events Management
 function renderAdminEvents() {
     const list = document.getElementById('adminEventsList');
@@ -655,6 +755,8 @@ function renderAdminEvents() {
 
     if (events.length === 0) {
         list.innerHTML = '<p class="empty-message">Nenhum evento cadastrado</p>';
+        const copySelect = document.getElementById('eventCopyFrom');
+        if (copySelect) copySelect.innerHTML = '<option value="">— Selecionar evento para reutilizar —</option>';
         return;
     }
 
@@ -677,6 +779,15 @@ function renderAdminEvents() {
 
         list.appendChild(item);
     });
+
+    // Atualizar dropdown "Copiar de"
+    const copySelect = document.getElementById('eventCopyFrom');
+    if (copySelect) {
+        const curVal = copySelect.value;
+        copySelect.innerHTML = '<option value="">— Selecionar evento para reutilizar —</option>' +
+            events.map(e => `<option value="${e.id}">${e.name} (${e.startDate})</option>`).join('');
+        if (curVal && events.some(e => e.id === curVal)) copySelect.value = curVal;
+    }
 }
 
 async function handleEventSubmit(e) {
@@ -684,6 +795,22 @@ async function handleEventSubmit(e) {
 
     const eventId = document.getElementById('eventId').value;
     const selectedMaanaim = document.getElementById('eventMaanaim').value;
+
+    // Parse datas (dd/mm/aaaa → YYYY-MM-DD)
+    const startDate = parseDateInput(document.getElementById('eventStartDate').value);
+    const endDate = parseDateInput(document.getElementById('eventEndDate').value);
+    const deadline = parseDateInput(document.getElementById('eventDeadline').value);
+    if (!startDate || !endDate || !deadline) {
+        alert('Datas inválidas. Use o formato dd/mm/aaaa (ex: 25/01/2026).');
+        return;
+    }
+
+    const startTime = parseTimeInput(document.getElementById('eventStartTime').value);
+    const endTime = parseTimeInput(document.getElementById('eventEndTime').value);
+    if (!startTime || !endTime) {
+        alert('Horários inválidos. Use hh:mm ou digite apenas os números (ex: 16 ou 1630 para 16:30).');
+        return;
+    }
     
     // FORÇAR classe = "geral" e área = "TEMPLO" se for Terra Vermelha
     let eventClass = document.getElementById('eventClass').value;
@@ -709,14 +836,14 @@ async function handleEventSubmit(e) {
         id: eventId || Date.now().toString(),
         name: document.getElementById('eventName').value,
         class: eventClass,
-        startDate: document.getElementById('eventStartDate').value,
-        endDate: document.getElementById('eventEndDate').value,
-        startTime: document.getElementById('eventStartTime').value,
-        endTime: document.getElementById('eventEndTime').value,
+        startDate,
+        endDate,
+        startTime,
+        endTime,
         maanaim: selectedMaanaim,
         area: eventArea,
         price: parseFloat(document.getElementById('eventPrice').value),
-        deadline: document.getElementById('eventDeadline').value,
+        deadline,
         inviteImage: inviteImage || null
     };
 
@@ -739,8 +866,20 @@ async function handleEventSubmit(e) {
 
     saveToLocalStorage();
     renderAdminEvents();
-    clearEventForm();
-    alert('Evento salvo com sucesso!');
+
+    const saveAndNew = window._eventSaveAndNew;
+    if (typeof window._eventSaveAndNew !== 'undefined') window._eventSaveAndNew = false;
+
+    if (saveAndNew) {
+        // Manter dados, limpar só id e nome para próximo evento
+        document.getElementById('eventId').value = '';
+        document.getElementById('eventName').value = '';
+        document.getElementById('eventName').focus();
+        alert('Evento salvo! Preencha o nome e salve o próximo.');
+    } else {
+        clearEventForm();
+        alert('Evento salvo com sucesso!');
+    }
 }
 
 function editEvent(eventId) {
@@ -756,14 +895,14 @@ function editEvent(eventId) {
     document.getElementById('eventId').value = event.id;
     document.getElementById('eventName').value = event.name;
     document.getElementById('eventClass').value = event.class;
-    document.getElementById('eventStartDate').value = event.startDate;
-    document.getElementById('eventEndDate').value = event.endDate;
+    document.getElementById('eventStartDate').value = formatDateForInput(event.startDate);
+    document.getElementById('eventEndDate').value = formatDateForInput(event.endDate);
     document.getElementById('eventStartTime').value = event.startTime;
     document.getElementById('eventEndTime').value = event.endTime;
     document.getElementById('eventMaanaim').value = event.maanaim;
     document.getElementById('eventArea').value = event.area;
     document.getElementById('eventPrice').value = event.price;
-    document.getElementById('eventDeadline').value = event.deadline;
+    document.getElementById('eventDeadline').value = formatDateForInput(event.deadline);
     
     // Disparar evento change do maanaim para ocultar/mostrar campos de TV
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));

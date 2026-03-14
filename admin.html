@@ -97,6 +97,13 @@
                 <!-- Seção de Eventos -->
                 <div id="eventosSection" class="admin-section active">
                     <h2>Adicionar/Editar Evento</h2>
+                    <div class="form-row" style="margin-bottom:12px;align-items:center;gap:8px;">
+                        <label for="eventCopyFrom" style="margin:0;white-space:nowrap;">Copiar de:</label>
+                        <select id="eventCopyFrom" style="flex:1;max-width:280px;">
+                            <option value="">— Selecionar evento para reutilizar —</option>
+                        </select>
+                        <button type="button" id="eventCopyBtn" class="btn-secondary" style="padding:8px 14px;">Aplicar</button>
+                    </div>
                     <form id="eventForm" class="admin-form">
                         <input type="hidden" id="eventId">
                         <div class="form-row">
@@ -122,21 +129,21 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventStartDate">Data Início:</label>
-                                <input type="date" id="eventStartDate" required>
+                                <input type="text" id="eventStartDate" placeholder="dd/mm/aaaa" required autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label for="eventEndDate">Data Fim:</label>
-                                <input type="date" id="eventEndDate" required>
+                                <input type="text" id="eventEndDate" placeholder="dd/mm/aaaa" required autocomplete="off">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventStartTime">Horário Início:</label>
-                                <input type="time" id="eventStartTime" required>
+                                <input type="text" id="eventStartTime" placeholder="hh:mm" required autocomplete="off" maxlength="5">
                             </div>
                             <div class="form-group">
                                 <label for="eventEndTime">Horário Fim:</label>
-                                <input type="time" id="eventEndTime" required>
+                                <input type="text" id="eventEndTime" placeholder="hh:mm" required autocomplete="off" maxlength="5">
                             </div>
                         </div>
                         <div class="form-row">
@@ -161,7 +168,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="eventDeadline">Inscrições até:</label>
-                                <input type="date" id="eventDeadline" required>
+                                <input type="text" id="eventDeadline" placeholder="dd/mm/aaaa" required autocomplete="off">
                             </div>
                         </div>
 
@@ -178,7 +185,8 @@
 
                         <div class="form-buttons">
                             <button type="submit" class="btn-primary">Salvar Evento</button>
-                            <button type="button" id="cancelEventBtn" class="btn-secondary">Cancelar</button>
+                            <button type="button" id="eventSaveAndNewBtn" class="btn-secondary">Salvar e adicionar outro</button>
+                            <button type="button" id="cancelEventBtn" class="btn-secondary">Limpar formulário</button>
                         </div>
                     </form>
 
