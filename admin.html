@@ -129,21 +129,33 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventStartDate">Data Início:</label>
-                                <input type="text" id="eventStartDate" placeholder="dd/mm/aaaa" autocomplete="off">
+                                <div class="input-with-picker">
+                                    <input type="text" id="eventStartDate" placeholder="dd/mm/aaaa" autocomplete="off">
+                                    <input type="date" id="eventStartDatePicker" class="picker-overlay" aria-label="Calendário">
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="eventEndDate">Data Fim:</label>
-                                <input type="text" id="eventEndDate" placeholder="dd/mm/aaaa" autocomplete="off">
+                                <div class="input-with-picker">
+                                    <input type="text" id="eventEndDate" placeholder="dd/mm/aaaa" autocomplete="off">
+                                    <input type="date" id="eventEndDatePicker" class="picker-overlay" aria-label="Calendário">
+                                </div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventStartTime">Horário Início:</label>
-                                <input type="text" id="eventStartTime" placeholder="hh:mm" autocomplete="off" maxlength="5">
+                                <div class="input-with-picker">
+                                    <input type="text" id="eventStartTime" placeholder="hh:mm" autocomplete="off">
+                                    <input type="time" id="eventStartTimePicker" class="picker-overlay" aria-label="Horário">
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="eventEndTime">Horário Fim:</label>
-                                <input type="text" id="eventEndTime" placeholder="hh:mm" autocomplete="off" maxlength="5">
+                                <div class="input-with-picker">
+                                    <input type="text" id="eventEndTime" placeholder="hh:mm" autocomplete="off">
+                                    <input type="time" id="eventEndTimePicker" class="picker-overlay" aria-label="Horário">
+                                </div>
                             </div>
                         </div>
                         <div class="form-row">
@@ -168,7 +180,10 @@
                             </div>
                             <div class="form-group">
                                 <label for="eventDeadline">Inscrições até:</label>
-                                <input type="text" id="eventDeadline" placeholder="dd/mm/aaaa" autocomplete="off">
+                                <div class="input-with-picker">
+                                    <input type="text" id="eventDeadline" placeholder="dd/mm/aaaa" autocomplete="off">
+                                    <input type="date" id="eventDeadlinePicker" class="picker-overlay" aria-label="Calendário">
+                                </div>
                             </div>
                         </div>
                         <div class="form-row" id="eventPriceChildRow" style="display:none">

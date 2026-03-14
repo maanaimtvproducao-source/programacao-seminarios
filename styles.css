@@ -1319,6 +1319,33 @@ body {
     font-size: 1rem;
 }
 
+/* Campo texto + picker (data/hora) */
+.input-with-picker {
+    position: relative;
+}
+.input-with-picker input[type="text"] {
+    width: 100%;
+    padding-right: 42px;
+}
+.input-with-picker .picker-overlay {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0;
+}
+.input-with-picker .picker-overlay::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+}
+
 .form-group small {
     display: block;
     margin-top: 5px;

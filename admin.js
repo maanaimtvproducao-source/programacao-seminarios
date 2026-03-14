@@ -307,7 +307,8 @@ function setupEventListeners() {
     document.getElementById('eventCopyFrom').addEventListener('change', () => {
         if (document.getElementById('eventCopyFrom').value) applyCopyFromEvent();
     });
-    setupTimeInputs();
+    setupPickerSync();
+    setupDateTimeInputs();
     
     // Listener para ocultar classe e área se Terra Vermelha for selecionado
     const eventMaanaimSelect = document.getElementById('eventMaanaim');
@@ -665,54 +666,92 @@ function getMaanaimName(slug) {
 // ─── Utilitários de data (dd/mm/aaaa ↔ YYYY-MM-DD) ─────────────────────────────
 function parseDateInput(val) {
     if (!val || typeof val !== 'string') return '';
-    const s = val.trim().replace(/\s/g, '');
-    // dd/mm/yyyy ou dd-mm-yyyy ou yyyy-mm-dd
-    let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const s = val.trim().replace(/\s+/g, '');
+    // dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
+    let m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
     if (m) {
         const d = m[1].padStart(2, '0'), mo = m[2].padStart(2, '0'), y = m[3];
         return `${y}-${mo}-${d}`;
     }
+    // yyyy-mm-dd, yyyy/mm/dd
     m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
     if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
     return '';
 }
 
-function formatDateForInput(iso) {
+function formatDateForDisplay(iso) {
     if (!iso || typeof iso !== 'string') return '';
     const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
-function formatTimeOnInput(el) {
-    const v = el.value.replace(/\D/g, '');
-    if (v.length <= 2) el.value = v;
-    else if (v.length === 3) el.value = v.slice(0, 2) + ':' + v[2];
-    else el.value = v.slice(0, 2) + ':' + v.slice(2, 4);
-}
-
-function formatTimeOnBlur(el) {
-    const v = el.value.replace(/\D/g, '');
-    if (v.length === 2) el.value = v + ':00';
-    else if (v.length === 3) el.value = v.slice(0, 2) + ':' + v[2] + '0';
-    else if (v.length >= 4) el.value = v.slice(0, 2) + ':' + v.slice(2, 4);
+function toDateInputValue(iso) {
+    if (!iso || typeof iso !== 'string') return '';
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return iso;
+    return parseDateInput(iso) || iso;
 }
 
 function parseTimeInput(val) {
     if (!val || typeof val !== 'string') return '';
-    const v = val.trim().replace(/\D/g, '');
-    if (v.length === 2) return v + ':00';
-    if (v.length >= 4) return v.slice(0, 2) + ':' + v.slice(2, 4);
-    const m = val.match(/^(\d{1,2}):(\d{1,2})$/);
+    const v = val.trim().replace(/\s+/g, '').toLowerCase();
+    // hh:mm ou h:mm
+    let m = v.match(/^(\d{1,2}):(\d{1,2})$/);
     if (m) return m[1].padStart(2, '0') + ':' + m[2].padStart(2, '0');
+    // Apenas números: 15, 1530, 930
+    const digits = v.replace(/\D/g, '');
+    if (digits.length === 2) return digits + ':00';
+    if (digits.length >= 4) return digits.slice(0, 2) + ':' + digits.slice(2, 4);
+    // 15h, 15h30, 9h30
+    m = v.match(/^(\d{1,2})h(\d{0,2})$/);
+    if (m) return m[1].padStart(2, '0') + ':' + (m[2] || '00').padStart(2, '0');
     return '';
 }
 
-function setupTimeInputs() {
+function formatDateOnInput(el) {
+    let v = el.value.replace(/\D/g, '');
+    if (v.length > 8) v = v.slice(0, 8);
+    if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
+    if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5);
+    el.value = v;
+}
+
+function formatTimeOnInput(el) {
+    let v = el.value.replace(/\D/g, '');
+    if (v.length > 4) v = v.slice(0, 4);
+    if (v.length > 2) v = v.slice(0, 2) + ':' + v.slice(2);
+    el.value = v;
+}
+
+function setupDateTimeInputs() {
+    ['eventStartDate', 'eventEndDate', 'eventDeadline'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => formatDateOnInput(el));
+    });
     ['eventStartTime', 'eventEndTime'].forEach(id => {
         const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('input', () => formatTimeOnInput(el));
-        el.addEventListener('blur', () => formatTimeOnBlur(el));
+        if (el) el.addEventListener('input', () => formatTimeOnInput(el));
+    });
+}
+
+function setupPickerSync() {
+    const pairs = [
+        ['eventStartDate', 'eventStartDatePicker'],
+        ['eventEndDate', 'eventEndDatePicker'],
+        ['eventDeadline', 'eventDeadlinePicker'],
+        ['eventStartTime', 'eventStartTimePicker'],
+        ['eventEndTime', 'eventEndTimePicker']
+    ];
+    pairs.forEach(([textId, pickerId]) => {
+        const textEl = document.getElementById(textId);
+        const pickerEl = document.getElementById(pickerId);
+        if (!textEl || !pickerEl) return;
+        const isDate = pickerId.includes('Date');
+        pickerEl.addEventListener('change', () => {
+            const v = pickerEl.value;
+            if (!v) return;
+            textEl.value = isDate ? formatDateForDisplay(v) : v;
+        });
     });
 }
 
@@ -729,15 +768,23 @@ function fillEventForm(event, forEdit) {
     document.getElementById('eventId').value = forEdit ? event.id : '';
     document.getElementById('eventName').value = forEdit ? event.name : '';
     document.getElementById('eventClass').value = event.class || 'geral';
-    document.getElementById('eventStartDate').value = formatDateForInput(event.startDate);
-    document.getElementById('eventEndDate').value = formatDateForInput(event.endDate);
+    const startD = toDateInputValue(event.startDate);
+    const endD = toDateInputValue(event.endDate);
+    const deadD = toDateInputValue(event.deadline);
+    document.getElementById('eventStartDate').value = formatDateForDisplay(startD) || startD;
+    document.getElementById('eventEndDate').value = formatDateForDisplay(endD) || endD;
+    document.getElementById('eventDeadline').value = formatDateForDisplay(deadD) || deadD;
+    document.getElementById('eventStartDatePicker').value = startD || '';
+    document.getElementById('eventEndDatePicker').value = endD || '';
+    document.getElementById('eventDeadlinePicker').value = deadD || '';
     document.getElementById('eventStartTime').value = event.startTime || '';
     document.getElementById('eventEndTime').value = event.endTime || '';
+    document.getElementById('eventStartTimePicker').value = event.startTime || '';
+    document.getElementById('eventEndTimePicker').value = event.endTime || '';
     document.getElementById('eventMaanaim').value = event.maanaim || '';
     document.getElementById('eventArea').value = event.area || 'TEMPLO';
     document.getElementById('eventPrice').value = event.price ?? '';
     document.getElementById('eventPriceChild').value = event.priceChild ?? '';
-    document.getElementById('eventDeadline').value = formatDateForInput(event.deadline);
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
     document.getElementById('eventClass').dispatchEvent(new Event('change'));
     if (event.inviteImage) {
@@ -804,36 +851,35 @@ async function handleEventSubmit(e) {
     const eventId = document.getElementById('eventId').value;
     const selectedMaanaim = document.getElementById('eventMaanaim').value;
 
-    // Parse datas (dd/mm/aaaa → YYYY-MM-DD) — opcional
-    const startDateRaw = document.getElementById('eventStartDate').value;
-    const endDateRaw = document.getElementById('eventEndDate').value;
-    const deadlineRaw = document.getElementById('eventDeadline').value;
+    // Campos de texto: aceitam digitação, colagem e picker (vários formatos)
+    const startDateRaw = document.getElementById('eventStartDate').value.trim();
+    const endDateRaw = document.getElementById('eventEndDate').value.trim();
+    const deadlineRaw = document.getElementById('eventDeadline').value.trim();
+    const startTimeRaw = document.getElementById('eventStartTime').value.trim();
+    const endTimeRaw = document.getElementById('eventEndTime').value.trim();
     const startDate = startDateRaw ? parseDateInput(startDateRaw) : '';
     const endDate = endDateRaw ? parseDateInput(endDateRaw) : '';
     const deadline = deadlineRaw ? parseDateInput(deadlineRaw) : '';
+    const startTime = startTimeRaw ? parseTimeInput(startTimeRaw) : '';
+    const endTime = endTimeRaw ? parseTimeInput(endTimeRaw) : '';
     if (startDateRaw && !startDate) {
-        alert('Data início inválida. Use dd/mm/aaaa (ex: 25/01/2026).');
+        alert('Data início não reconhecida. Use dd/mm/aaaa ou cole a data completa.');
         return;
     }
     if (endDateRaw && !endDate) {
-        alert('Data fim inválida. Use dd/mm/aaaa.');
+        alert('Data fim não reconhecida. Use dd/mm/aaaa.');
         return;
     }
     if (deadlineRaw && !deadline) {
-        alert('Data de inscrições inválida. Use dd/mm/aaaa.');
+        alert('Data de inscrições não reconhecida. Use dd/mm/aaaa.');
         return;
     }
-
-    const startTimeRaw = document.getElementById('eventStartTime').value;
-    const endTimeRaw = document.getElementById('eventEndTime').value;
-    const startTime = startTimeRaw ? parseTimeInput(startTimeRaw) : '';
-    const endTime = endTimeRaw ? parseTimeInput(endTimeRaw) : '';
     if (startTimeRaw && !startTime) {
-        alert('Horário início inválido. Use hh:mm ou números (ex: 16 ou 1630).');
+        alert('Horário início não reconhecido. Use hh:mm, 15h, 1530, etc.');
         return;
     }
     if (endTimeRaw && !endTime) {
-        alert('Horário fim inválido. Use hh:mm ou números.');
+        alert('Horário fim não reconhecido. Use hh:mm, 15h, 1530, etc.');
         return;
     }
     
@@ -923,15 +969,23 @@ function editEvent(eventId) {
     document.getElementById('eventId').value = event.id;
     document.getElementById('eventName').value = event.name;
     document.getElementById('eventClass').value = event.class;
-    document.getElementById('eventStartDate').value = formatDateForInput(event.startDate);
-    document.getElementById('eventEndDate').value = formatDateForInput(event.endDate);
-    document.getElementById('eventStartTime').value = event.startTime;
-    document.getElementById('eventEndTime').value = event.endTime;
+    const startD = toDateInputValue(event.startDate);
+    const endD = toDateInputValue(event.endDate);
+    const deadD = toDateInputValue(event.deadline);
+    document.getElementById('eventStartDate').value = formatDateForDisplay(startD) || startD;
+    document.getElementById('eventEndDate').value = formatDateForDisplay(endD) || endD;
+    document.getElementById('eventDeadline').value = formatDateForDisplay(deadD) || deadD;
+    document.getElementById('eventStartDatePicker').value = startD || '';
+    document.getElementById('eventEndDatePicker').value = endD || '';
+    document.getElementById('eventDeadlinePicker').value = deadD || '';
+    document.getElementById('eventStartTime').value = event.startTime || '';
+    document.getElementById('eventEndTime').value = event.endTime || '';
+    document.getElementById('eventStartTimePicker').value = event.startTime || '';
+    document.getElementById('eventEndTimePicker').value = event.endTime || '';
     document.getElementById('eventMaanaim').value = event.maanaim;
     document.getElementById('eventArea').value = event.area;
     document.getElementById('eventPrice').value = event.price ?? '';
     document.getElementById('eventPriceChild').value = event.priceChild ?? '';
-    document.getElementById('eventDeadline').value = formatDateForInput(event.deadline);
     document.getElementById('eventClass').dispatchEvent(new Event('change'));
     
     // Disparar evento change do maanaim para ocultar/mostrar campos de TV
