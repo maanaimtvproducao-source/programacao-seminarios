@@ -109,11 +109,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventName">Nome do Evento:</label>
-                                <input type="text" id="eventName" required>
+                                <input type="text" id="eventName">
                             </div>
                             <div class="form-group">
                                 <label for="eventClass">Classe:</label>
-                                <select id="eventClass" required>
+                                <select id="eventClass">
                                     <option value="1periodo">1º Período</option>
                                     <option value="2periodo">2º Período</option>
                                     <option value="3periodo">3º Período</option>
@@ -129,32 +129,32 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventStartDate">Data Início:</label>
-                                <input type="text" id="eventStartDate" placeholder="dd/mm/aaaa" required autocomplete="off">
+                                <input type="text" id="eventStartDate" placeholder="dd/mm/aaaa" autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label for="eventEndDate">Data Fim:</label>
-                                <input type="text" id="eventEndDate" placeholder="dd/mm/aaaa" required autocomplete="off">
+                                <input type="text" id="eventEndDate" placeholder="dd/mm/aaaa" autocomplete="off">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventStartTime">Horário Início:</label>
-                                <input type="text" id="eventStartTime" placeholder="hh:mm" required autocomplete="off" maxlength="5">
+                                <input type="text" id="eventStartTime" placeholder="hh:mm" autocomplete="off" maxlength="5">
                             </div>
                             <div class="form-group">
                                 <label for="eventEndTime">Horário Fim:</label>
-                                <input type="text" id="eventEndTime" placeholder="hh:mm" required autocomplete="off" maxlength="5">
+                                <input type="text" id="eventEndTime" placeholder="hh:mm" autocomplete="off" maxlength="5">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="eventMaanaim">Maanaim:</label>
-                                <select id="eventMaanaim" required>
+                                <select id="eventMaanaim">
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="eventArea">Área:</label>
-                                <select id="eventArea" required>
+                                <select id="eventArea">
                                     <option value="">Selecione...</option>
                                     <option value="TEMPLO">TEMPLO</option>
                                     <option value="TRIPLEX">TRIPLEX</option>
@@ -163,12 +163,18 @@
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="eventPrice">Valor (R$):</label>
-                                <input type="number" id="eventPrice" step="0.01" required>
+                                <label for="eventPrice">Valor adulto (R$):</label>
+                                <input type="number" id="eventPrice" step="0.01">
                             </div>
                             <div class="form-group">
                                 <label for="eventDeadline">Inscrições até:</label>
-                                <input type="text" id="eventDeadline" placeholder="dd/mm/aaaa" required autocomplete="off">
+                                <input type="text" id="eventDeadline" placeholder="dd/mm/aaaa" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="form-row" id="eventPriceChildRow" style="display:none">
+                            <div class="form-group">
+                                <label for="eventPriceChild">Valor crianças (R$) — Unidos em Família:</label>
+                                <input type="number" id="eventPriceChild" step="0.01" placeholder="Opcional">
                             </div>
                         </div>
 

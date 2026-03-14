@@ -321,23 +321,21 @@ function setupEventListeners() {
         if (isTerraVermelha) {
             // Ocultar campo classe e área (fixos para TV)
             eventClassGroup.style.display = 'none';
-            document.getElementById('eventClass').removeAttribute('required');
             document.getElementById('eventClass').value = 'geral';
             
             eventAreaGroup.style.display = 'none';
-            document.getElementById('eventArea').removeAttribute('required');
             document.getElementById('eventArea').value = 'TEMPLO';
 
             // Mostrar campo de imagem
             const imageRow = document.getElementById('eventImageRow');
             if (imageRow) imageRow.style.display = '';
+            const priceChildRow = document.getElementById('eventPriceChildRow');
+            if (priceChildRow) priceChildRow.style.display = 'none';
         } else {
             // Mostrar campo classe e área
             eventClassGroup.style.display = '';
-            document.getElementById('eventClass').setAttribute('required', 'required');
-            
             eventAreaGroup.style.display = '';
-            document.getElementById('eventArea').setAttribute('required', 'required');
+            togglePriceChildRow();
 
             // Ocultar campo de imagem
             const imageRow = document.getElementById('eventImageRow');
@@ -347,6 +345,14 @@ function setupEventListeners() {
             document.getElementById('eventImageStatus').textContent = '';
         }
     });
+
+    // Mostrar campo valor crianças quando classe = Unidos em Família
+    document.getElementById('eventClass').addEventListener('change', togglePriceChildRow);
+    function togglePriceChildRow() {
+        const row = document.getElementById('eventPriceChildRow');
+        const cls = document.getElementById('eventClass').value;
+        if (row) row.style.display = cls === 'unidos' ? '' : 'none';
+    }
 
     // Preview da imagem ao selecionar arquivo
     const eventImageInput = document.getElementById('eventImage');
@@ -730,8 +736,10 @@ function fillEventForm(event, forEdit) {
     document.getElementById('eventMaanaim').value = event.maanaim || '';
     document.getElementById('eventArea').value = event.area || 'TEMPLO';
     document.getElementById('eventPrice').value = event.price ?? '';
+    document.getElementById('eventPriceChild').value = event.priceChild ?? '';
     document.getElementById('eventDeadline').value = formatDateForInput(event.deadline);
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
+    document.getElementById('eventClass').dispatchEvent(new Event('change'));
     if (event.inviteImage) {
         document.getElementById('eventImageUrl').value = event.inviteImage;
         const preview = document.getElementById('eventImagePreview');
@@ -796,19 +804,36 @@ async function handleEventSubmit(e) {
     const eventId = document.getElementById('eventId').value;
     const selectedMaanaim = document.getElementById('eventMaanaim').value;
 
-    // Parse datas (dd/mm/aaaa → YYYY-MM-DD)
-    const startDate = parseDateInput(document.getElementById('eventStartDate').value);
-    const endDate = parseDateInput(document.getElementById('eventEndDate').value);
-    const deadline = parseDateInput(document.getElementById('eventDeadline').value);
-    if (!startDate || !endDate || !deadline) {
-        alert('Datas inválidas. Use o formato dd/mm/aaaa (ex: 25/01/2026).');
+    // Parse datas (dd/mm/aaaa → YYYY-MM-DD) — opcional
+    const startDateRaw = document.getElementById('eventStartDate').value;
+    const endDateRaw = document.getElementById('eventEndDate').value;
+    const deadlineRaw = document.getElementById('eventDeadline').value;
+    const startDate = startDateRaw ? parseDateInput(startDateRaw) : '';
+    const endDate = endDateRaw ? parseDateInput(endDateRaw) : '';
+    const deadline = deadlineRaw ? parseDateInput(deadlineRaw) : '';
+    if (startDateRaw && !startDate) {
+        alert('Data início inválida. Use dd/mm/aaaa (ex: 25/01/2026).');
+        return;
+    }
+    if (endDateRaw && !endDate) {
+        alert('Data fim inválida. Use dd/mm/aaaa.');
+        return;
+    }
+    if (deadlineRaw && !deadline) {
+        alert('Data de inscrições inválida. Use dd/mm/aaaa.');
         return;
     }
 
-    const startTime = parseTimeInput(document.getElementById('eventStartTime').value);
-    const endTime = parseTimeInput(document.getElementById('eventEndTime').value);
-    if (!startTime || !endTime) {
-        alert('Horários inválidos. Use hh:mm ou digite apenas os números (ex: 16 ou 1630 para 16:30).');
+    const startTimeRaw = document.getElementById('eventStartTime').value;
+    const endTimeRaw = document.getElementById('eventEndTime').value;
+    const startTime = startTimeRaw ? parseTimeInput(startTimeRaw) : '';
+    const endTime = endTimeRaw ? parseTimeInput(endTimeRaw) : '';
+    if (startTimeRaw && !startTime) {
+        alert('Horário início inválido. Use hh:mm ou números (ex: 16 ou 1630).');
+        return;
+    }
+    if (endTimeRaw && !endTime) {
+        alert('Horário fim inválido. Use hh:mm ou números.');
         return;
     }
     
@@ -832,6 +857,8 @@ async function handleEventSubmit(e) {
         }
     }
     
+    const priceVal = document.getElementById('eventPrice').value;
+    const priceChildVal = document.getElementById('eventPriceChild').value;
     const eventData = {
         id: eventId || Date.now().toString(),
         name: document.getElementById('eventName').value,
@@ -842,7 +869,8 @@ async function handleEventSubmit(e) {
         endTime,
         maanaim: selectedMaanaim,
         area: eventArea,
-        price: parseFloat(document.getElementById('eventPrice').value),
+        price: parseFloat(priceVal) || 0,
+        priceChild: eventClass === 'unidos' && priceChildVal ? parseFloat(priceChildVal) : null,
         deadline,
         inviteImage: inviteImage || null
     };
@@ -901,8 +929,10 @@ function editEvent(eventId) {
     document.getElementById('eventEndTime').value = event.endTime;
     document.getElementById('eventMaanaim').value = event.maanaim;
     document.getElementById('eventArea').value = event.area;
-    document.getElementById('eventPrice').value = event.price;
+    document.getElementById('eventPrice').value = event.price ?? '';
+    document.getElementById('eventPriceChild').value = event.priceChild ?? '';
     document.getElementById('eventDeadline').value = formatDateForInput(event.deadline);
+    document.getElementById('eventClass').dispatchEvent(new Event('change'));
     
     // Disparar evento change do maanaim para ocultar/mostrar campos de TV
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
@@ -951,6 +981,8 @@ function clearEventForm() {
     
     // Disparar evento change para atualizar visibilidade dos campos
     document.getElementById('eventMaanaim').dispatchEvent(new Event('change'));
+    document.getElementById('eventClass').dispatchEvent(new Event('change'));
+    document.getElementById('eventPriceChild').value = '';
 
     // Limpar campos de imagem
     const imgInput = document.getElementById('eventImage');

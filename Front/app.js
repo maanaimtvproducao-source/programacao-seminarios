@@ -58,6 +58,7 @@ function firebaseToAppEvent(e) {
     endTime:      e.endTime,
     title:        (e.name || "").toUpperCase(),
     priceAdult:   parseFloat(e.price) || 0,
+    priceChild:   e.priceChild != null ? parseFloat(e.priceChild) : null,
     regUntilISO:  e.deadline,
     // Imagem do convite (null quando não houver)
     inviteImage:  e.inviteImage || null
@@ -259,7 +260,14 @@ function modalOpen(event) {
   document.getElementById("m-local").textContent = locationLabel(event.location);
 
   const priceEl = document.getElementById("m-price");
-  priceEl.textContent = event.priceAdult ? `${moneyBRL(event.priceAdult)} (adulto)` : "Gratuito";
+  let priceText = "Gratuito";
+  if (event.priceAdult) {
+    priceText = `${moneyBRL(event.priceAdult)} (adulto)`;
+    if (event.priceChild != null && event.class === "unidos") {
+      priceText += ` • ${moneyBRL(event.priceChild)} (crianças)`;
+    }
+  }
+  priceEl.textContent = priceText;
   priceEl.classList.toggle("green", !event.priceAdult);
 
   document.getElementById("m-reguntil").textContent = fmtBR(event.regUntilISO);
@@ -273,7 +281,7 @@ Quero me inscrever nesse evento:
 * Área: ${event.area || "—"}${clsInfo}
 * Início: ${fmtBR(event.startISO)} às ${event.startTime}
 * Fim: ${fmtBR(event.endISO)} às ${event.endTime}
-* Valor: ${event.priceAdult ? moneyBRL(event.priceAdult) + " (adulto)" : "Gratuito"}
+* Valor: ${event.priceAdult ? moneyBRL(event.priceAdult) + " (adulto)" + (event.priceChild != null && event.class === "unidos" ? " • " + moneyBRL(event.priceChild) + " (crianças)" : "") : "Gratuito"}
 * Inscrições até: ${fmtBR(event.regUntilISO)}`;
 
   modal.dataset.share = shareText;
